@@ -1,5 +1,5 @@
-const officeLat = 3.1390;  // Example location (Kuala Lumpur)
-const officeLng = 101.6869;
+const officeLat = 3.1925454;  // Example location (Kuala Lumpur)
+const officeLng = 101.6110639;
 const maxDistanceMeters = 100; // Allow 100m around office
 
 function distanceBetween(lat1, lon1, lat2, lon2) {
