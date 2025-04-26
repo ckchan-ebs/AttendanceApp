@@ -14,14 +14,14 @@ function distanceBetween(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-function checkLocation() {
+function checkLocation(actionType) {
   navigator.geolocation.getCurrentPosition(function(position) {
-    console.log(`Detected Location: ${position.coords.latitude}, ${position.coords.longitude}`); // ADD THIS
+    console.log(`Detected Location: ${position.coords.latitude}, ${position.coords.longitude}`);
     const distance = distanceBetween(position.coords.latitude, position.coords.longitude, officeLat, officeLng);
-    console.log(`Distance from office: ${distance.toFixed(2)} meters`); // ADD THIS
+    console.log(`Distance from office: ${distance.toFixed(2)} meters`);
 
     if (distance <= maxDistanceMeters) {
-      proceedCheck();
+      proceedCheck(actionType);
     } else {
       alert("❌ You are not in the office area!");
     }
@@ -31,15 +31,14 @@ function checkLocation() {
   });
 }
 
-
-function proceedCheck() {
+function proceedCheck(actionType) {
   const staffName = localStorage.getItem("staffName");
   if (!staffName) {
     const name = prompt("Enter your name:");
     localStorage.setItem("staffName", name);
-    sendAttendance(name, "Check-In");
+    sendAttendance(name, actionType);
   } else {
-    checkToday(staffName);
+    sendAttendance(staffName, actionType);
   }
 }
 
