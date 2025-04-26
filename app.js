@@ -60,7 +60,7 @@ function checkToday(name) {
 }
 
 function sendAttendance(name, action) {
-  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/viewform";
+  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
   
   const formData = new FormData();
   formData.append("entry.1234567890", name);    // Replace with your actual entry ID for Name
