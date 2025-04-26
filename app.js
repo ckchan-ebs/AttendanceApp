@@ -16,16 +16,21 @@ function distanceBetween(lat1, lon1, lat2, lon2) {
 
 function checkLocation() {
   navigator.geolocation.getCurrentPosition(function(position) {
+    console.log(`Detected Location: ${position.coords.latitude}, ${position.coords.longitude}`); // ADD THIS
     const distance = distanceBetween(position.coords.latitude, position.coords.longitude, officeLat, officeLng);
+    console.log(`Distance from office: ${distance.toFixed(2)} meters`); // ADD THIS
+
     if (distance <= maxDistanceMeters) {
       proceedCheck();
     } else {
-      alert("❌ You are not in the office area!!!!!");
+      alert("❌ You are not in the office area!");
     }
-  }, function() {
+  }, function(error) {
+    console.error("Error getting location", error);
     alert("❌ Cannot get your location!");
   });
 }
+
 
 function proceedCheck() {
   const staffName = localStorage.getItem("staffName");
