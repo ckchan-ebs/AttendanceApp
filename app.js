@@ -20,7 +20,7 @@ function checkLocation() {
     if (distance <= maxDistanceMeters) {
       proceedCheck();
     } else {
-      alert("❌ You are not in the office area!");
+      alert("❌ You are not in the office area!!!!!");
     }
   }, function() {
     alert("❌ Cannot get your location!");
