@@ -1,24 +1,49 @@
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
-const maxDistanceMeters = 500; // Allow 100m around office
+const maxDistanceMeters = 500; // Allow 500m around office
 
-function distanceBetween(lat1, lon1, lat2, lon2) {
-  const toRad = x => x * Math.PI / 180;
-  const R = 6371e3;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+// Update the current date and time with day
+function updateDateTime() {
+  const now = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const timeString = now.toLocaleTimeString();
+  const dateString = now.toLocaleDateString(undefined, options);
+  document.getElementById("datetime").innerHTML = `${dateString} | ${timeString}`;
 }
+
+window.onload = function() {
+  const main = document.querySelector(".container");
+
+  // Show datetime
+  const datetimeDiv = document.getElementById("datetime");
+  updateDateTime();
+  setInterval(updateDateTime, 1000); // Update every second
+
+  // Show saved staff name if available
+  const staffNameDisplay = document.getElementById("staffNameDisplay");
+  const storedName = localStorage.getItem("staffName");
+  if (storedName) {
+    staffNameDisplay.innerHTML = `👤 ${storedName}`;
+  } else {
+    staffNameDisplay.innerHTML = '👤 No name saved yet';
+  }
+
+  // Add Check-In/Check-Out button logic
+  const actionBtn = document.getElementById("actionBtn");
+  const lastActionDate = localStorage.getItem("lastActionDate");
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastActionDate === today) {
+    actionBtn.innerText = "Check-Out";
+  } else {
+    actionBtn.innerText = "Check-In";
+  }
+};
 
 function checkLocation() {
   navigator.geolocation.getCurrentPosition(function(position) {
-    console.log(`Detected Location: ${position.coords.latitude}, ${position.coords.longitude}`); // ADD THIS
+    console.log(`Detected Location: ${position.coords.latitude}, ${position.coords.longitude}`);
     const distance = distanceBetween(position.coords.latitude, position.coords.longitude, officeLat, officeLng);
-    console.log(`Distance from office: ${distance.toFixed(2)} meters`); // ADD THIS
+    console.log(`Distance from office: ${distance.toFixed(2)} meters`);
 
     if (distance <= maxDistanceMeters) {
       proceedCheck();
@@ -31,7 +56,6 @@ function checkLocation() {
   });
 }
 
-
 function proceedCheck() {
   const staffName = localStorage.getItem("staffName");
   if (!staffName) {
@@ -39,47 +63,38 @@ function proceedCheck() {
     localStorage.setItem("staffName", name);
     sendAttendance(name, "Check-In");
   } else {
-    checkToday(staffName);
+    const actionType = document.getElementById("actionBtn").innerText === "Check-In" ? "Check-In" : "Check-Out";
+    sendAttendance(staffName, actionType);
   }
 }
 
-function checkToday(name) {
-  const today = new Date().toISOString().slice(0,10);
-  const lastAction = localStorage.getItem("lastActionDate");
-  
-  let action;
-  if (lastAction === today) {
-    action = "Check-Out";
-    localStorage.removeItem("lastActionDate");
-  } else {
-    action = "Check-In";
-    localStorage.setItem("lastActionDate", today);
-  }
-
-  sendAttendance(name, action);
-}
-
-function sendAttendance(name, action) {
+function sendAttendance(name, actionType) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
-
+  
   const formData = new FormData();
-  formData.append("entry.2140323296", name);    // Name
-  formData.append("entry.668867521", action);   // Action
-  formData.append("fvv", "1");
-  formData.append("pageHistory", "0");
-  formData.append("fbzx", Date.now().toString());  // Random number, just need to be unique
+  formData.append("entry.2140323296", name);    // Name field
+  formData.append("entry.668867521", actionType);  // Check-In/Check-Out field
 
   fetch(formUrl, {
     method: "POST",
     mode: "no-cors",
     body: formData
   }).then(() => {
-    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
+    alert(`✅ ${actionType} successful for ${name} at ${new Date().toLocaleTimeString()}`);
+    localStorage.setItem("lastActionDate", new Date().toISOString().slice(0, 10));  // Save action date
   }).catch(() => {
     alert("❌ Failed to send attendance!");
   });
 }
 
-window.onload = function() {
-  document.getElementById("main").innerHTML = '<button onclick="checkLocation()">Scan Attendance</button>';
-};
+function distanceBetween(lat1, lon1, lat2, lon2) {
+  const toRad = x => x * Math.PI / 180;
+  const R = 6371e3;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
