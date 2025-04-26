@@ -63,8 +63,8 @@ function sendAttendance(name, action) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
   
   const formData = new FormData();
-  formData.append("entry.1234567890", name);    // Replace with your actual entry ID for Name
-  formData.append("entry.0987654321", action);  // Replace with your actual entry ID for Action
+  formData.append("entry.2140323296", name);    // Replace with your actual entry ID for Name
+  formData.append("entry.668867521", action);  // Replace with your actual entry ID for Action
   
   fetch(formUrl, {
     method: "POST",
