@@ -60,11 +60,21 @@ function checkToday(name) {
 }
 
 function sendAttendance(name, action) {
-  const now = new Date().toISOString();
-  console.log(`Sending: ${name} - ${action} at ${now}`);
+  const formUrl = "https://forms.gle/FGLoTPCwumJco3Bm7";
   
-  // Here you later connect to database
-  alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
+  const formData = new FormData();
+  formData.append("entry.1234567890", name);    // Replace with your actual entry ID for Name
+  formData.append("entry.0987654321", action);  // Replace with your actual entry ID for Action
+  
+  fetch(formUrl, {
+    method: "POST",
+    mode: "no-cors",
+    body: formData
+  }).then(() => {
+    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
+  }).catch(() => {
+    alert("❌ Failed to send attendance!");
+  });
 }
 
 window.onload = function() {
