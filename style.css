@@ -1,0 +1,54 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 40px;
+  background-color: #f4f6f9;
+}
+
+.container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  margin: 0 auto;
+}
+
+h2 {
+  color: #333;
+}
+
+#datetime {
+  margin: 20px 0;
+  font-size: 1.2em;
+  color: #555;
+}
+
+#staffNameDisplay {
+  margin: 10px 0;
+  font-weight: bold;
+  font-size: 1.2em;
+  color: #2c3e50;
+}
+
+button {
+  padding: 15px 30px;
+  margin: 20px 0;
+  font-size: 1.2em;
+  border: none;
+  border-radius: 8px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
