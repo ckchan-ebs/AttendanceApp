@@ -2,87 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Attendance Check-In</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 30px;
-      background-color: #f0f2f5;
-    }
-    h2 {
-      color: #333;
-    }
-    #datetime {
-      margin: 20px 0;
-      font-size: 1.2em;
-      color: #555;
-    }
-    #staffNameDisplay {
-      margin: 10px 0;
-      font-weight: bold;
-      font-size: 1.1em;
-      color: #2c3e50;
-    }
-    button {
-      padding: 15px 25px;
-      margin: 10px;
-      font-size: 1em;
-      border: none;
-      border-radius: 8px;
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-  </style>
-  <script defer src="app.js"></script>
-  <script>
-    function updateDateTime() {
-      const now = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const timeString = now.toLocaleTimeString();
-      const dateString = now.toLocaleDateString(undefined, options);
-      document.getElementById("datetime").innerHTML = `${dateString} | ${timeString}`;
-    }
-
-    window.onload = function() {
-      const main = document.getElementById("main");
-
-      // Show datetime
-      const datetimeDiv = document.createElement("div");
-      datetimeDiv.id = "datetime";
-      main.appendChild(datetimeDiv);
-      updateDateTime();
-      setInterval(updateDateTime, 1000);
-
-      // Show saved staff name
-      const staffNameDisplay = document.createElement("div");
-      staffNameDisplay.id = "staffNameDisplay";
-      const storedName = localStorage.getItem("staffName");
-      staffNameDisplay.innerHTML = storedName ? `👤 ${storedName}` : '👤 No name saved yet';
-      main.appendChild(staffNameDisplay);
-
-      // Add Check-In button
-      const checkInBtn = document.createElement("button");
-      checkInBtn.innerText = "Check In";
-      checkInBtn.onclick = function() { checkLocation('Check-In'); };
-      main.appendChild(checkInBtn);
-
-      // Add Check-Out button
-      const checkOutBtn = document.createElement("button");
-      checkOutBtn.innerText = "Check Out";
-      checkOutBtn.onclick = function() { checkLocation('Check-Out'); };
-      main.appendChild(checkOutBtn);
-    };
-  </script>
+  <title>Attendance Check-In</title>
+  <link rel="stylesheet" href="style.css"> <!-- External CSS for styling -->
+  <script defer src="app.js"></script> <!-- External JavaScript -->
 </head>
 <body>
-  <h2>🏢 Attendance Check-In System</h2>
-  <div id="main"></div>
+  <div class="container">
+    <h2>🏢 Attendance Check-In</h2>
+    <div id="datetime"></div> <!-- Current date and time display -->
+    <div id="staffNameDisplay"></div> <!-- Display staff name if available -->
+    <button id="actionBtn" onclick="checkLocation()">Check-In</button> <!-- Check-In/Check-Out button -->
+  </div>
 </body>
 </html>
