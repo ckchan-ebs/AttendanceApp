@@ -2,17 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Attendance Check-In</title>
-  <link rel="stylesheet" href="style.css"> <!-- External CSS for styling -->
-  <script defer src="app.js"></script> <!-- External JavaScript -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script defer src="app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    h2 {
+      color: #333;
+    }
+    .container {
+      margin-top: 30px;
+    }
+    #datetime {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #555;
+    }
+    #staffNameDisplay {
+      font-size: 20px;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
+
+  <h2>Attendance Check-In</h2>
+
+  <!-- Display current date, time, and staff name -->
+  <div id="datetime"></div> <!-- Current date and time display -->
+  <div id="staffNameDisplay"></div> <!-- Display staff name if available -->
+
   <div class="container">
-    <h2>🏢 Attendance Check-In</h2>
-    <div id="datetime"></div> <!-- Current date and time display -->
-    <div id="staffNameDisplay"></div> <!-- Display staff name if available -->
-    <button id="actionBtn" onclick="checkLocation()">Check-In</button> <!-- Check-In/Check-Out button -->
+    <button id="attendanceButton" onclick="checkLocation()">Scan Attendance</button>
   </div>
+
 </body>
 </html>
