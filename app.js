@@ -61,16 +61,14 @@ function checkToday(name) {
 
 function sendAttendance(name, action) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
-  
-  const formData = new FormData();
-  formData.append("entry.2140323296", name);    // Your Name field real entry
-  formData.append("entry.668867521", action);   // Your Action field real entry
 
-  // Add mandatory hidden fields
-  formData.append("draftResponse", "[]");
+  const formData = new FormData();
+  formData.append("entry.2140323296", name);    // Name
+  formData.append("entry.668867521", action);   // Action
+  formData.append("fvv", "1");
   formData.append("pageHistory", "0");
-  formData.append("fbzx", (Date.now() % 10000000000).toString()); // random fbzx
-  
+  formData.append("fbzx", Date.now().toString());  // Random number, just need to be unique
+
   fetch(formUrl, {
     method: "POST",
     mode: "no-cors",
@@ -81,7 +79,6 @@ function sendAttendance(name, action) {
     alert("❌ Failed to send attendance!");
   });
 }
-
 
 window.onload = function() {
   document.getElementById("main").innerHTML = '<button onclick="checkLocation()">Scan Attendance</button>';
