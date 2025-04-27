@@ -1,4 +1,3 @@
-// Declare variables and constants outside any function or block to avoid re-declaration
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
 const maxDistanceMeters = 500; // Allow 500m around office
@@ -13,46 +12,20 @@ function updateDateTime() {
 }
 
 // Show saved staff name if available
-function showStaffName() {
-  const staffNameDisplay = document.getElementById('staffNameDisplay');
-  const storedName = localStorage.getItem("staffName");
-  if (storedName) {
-    staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
-  } else {
-    staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
-  }
+const staffNameDisplay = document.getElementById("staffNameDisplay");
+const storedName = localStorage.getItem("staffName");
+if (storedName) {
+  staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
+} else {
+  staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
 }
 
-// Check the last action and display the status before the button is clicked
-function updateCheckStatus() {
-  const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
-  const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
+// Update time every second
+setInterval(updateDateTime, 1000);
 
-  const checkStatusDiv = document.getElementById("checkStatus");
-  const attendanceButton = document.getElementById("attendanceButton");
-
-  if (lastAction === today) {
-    // If the last action was on the same date, it’s time to check out
-    checkStatusDiv.innerHTML = "You need to check out today.";
-    attendanceButton.innerHTML = "Check Out";  // Update button text to "Check Out"
-  } else {
-    // If no check-out for today, it’s check-in time
-    checkStatusDiv.innerHTML = "You need to check in today.";
-    attendanceButton.innerHTML = "Check In";  // Update button text to "Check In"
-  }
-}
-
-// Update the page on load
-window.onload = function() {
-  updateCheckStatus();
-  showStaffName();
-  setInterval(updateDateTime, 1000);
-}
-
-// Calculate distance between two locations (Haversine formula)
 function distanceBetween(lat1, lon1, lat2, lon2) {
   const toRad = x => x * Math.PI / 180;
-  const R = 6371e3; // Radius of the Earth in meters
+  const R = 6371e3;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -62,7 +35,6 @@ function distanceBetween(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Handle checking location for attendance
 function checkLocation() {
   navigator.geolocation.getCurrentPosition(function(position) {
     const latitude = position.coords.latitude;
@@ -106,29 +78,26 @@ function proceedCheck(remark, location) {
 }
 
 function checkToday(name, remark, location) {
-  const today = new Date().toISOString().slice(0, 10);
-  const nowTime = new Date().toLocaleTimeString();
+  const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
+  const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
   
-  const lastAction = localStorage.getItem("lastActionDate");
+  // Display the status message based on the action
   const actionMessageElement = document.getElementById("actionMessage");
   
   let action;
   if (lastAction === today) {
-    // Already checked-in, now doing check-out
+    // If the last action was on the same date, it's time to check out
     action = "Check-Out";
-    actionMessageElement.innerHTML = `✅ ${name}, you have checked out at ${nowTime}.`;
-    localStorage.setItem("checkOutTime", nowTime);  // Save check-out time
+    actionMessageElement.innerHTML = "You have already checked in. Please check out when you're done!";
+    localStorage.removeItem("lastActionDate"); // Clear last action date after check-out
   } else {
-    // First time today, doing check-in
+    // If no check-out for today, it's check-in
     action = "Check-In";
-    actionMessageElement.innerHTML = `✅ ${name}, you have checked in at ${nowTime}.`;
-    localStorage.setItem("lastActionDate", today);   // Save today's date
-    localStorage.setItem("checkInTime", nowTime);     // Save check-in time
-    localStorage.removeItem("checkOutTime");          // Clear previous check-out time
+    actionMessageElement.innerHTML = "You are currently checked out. Please check in to start your workday!";
+    localStorage.setItem("lastActionDate", today); // Save the current date as the last action date for future check-out
   }
 
-  sendAttendance(name, action, remark, location);
-  updateCheckStatus(); // <-- ADD this to update button text immediately
+  sendAttendance(name, action, remark, location); // Send attendance data to the form
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
@@ -152,29 +121,48 @@ function calculateWorkHours(checkInTime, checkOutTime) {
 }
 
 function sendAttendance(name, action, remark, location) {
-  // Check if the table exists before proceeding
-  const table = document.getElementById("attendanceTable");
-  if (!table) {
-    console.error("Attendance table not found!");
-    return;  // Exit the function if the table is not found
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const workHours = calculateWorkHours(localStorage.getItem("checkInTime"), localStorage.getItem("checkOutTime"));
-  const date = new Date().toLocaleDateString();
+  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
   
-  // Insert a new row into the table
-  const row = table.insertRow();
-  row.insertCell(0).textContent = date;  // Date
-  row.insertCell(1).textContent = name;  // Name
-  row.insertCell(2).textContent = localStorage.getItem("checkInTime");  // Check-In Time
-  row.insertCell(3).textContent = localStorage.getItem("checkOutTime");  // Check-Out Time
-  row.insertCell(4).textContent = workHours.hours;  // Work Hours
-  row.insertCell(5).textContent = workHours.minutes;  // Work Minutes
-  row.insertCell(6).textContent = remark;  // Remark
-  row.insertCell(7).textContent = location;  // Location
+  const formData = new FormData();
+  formData.append("entry.2140323296", name);  // Name field
+  formData.append("entry.668867521", action);  // Action field
+  formData.append("entry.1234567890", remark); // Append remark to existing remark (if any)
 
-  alert("Attendance recorded successfully!");
+  // To store location, ensure to append the new location
+  const previousLocation = localStorage.getItem("previousLocation") || "";
+  const newLocation = previousLocation + (previousLocation ? " | " : "") + location;  // Append location
+  formData.append("entry.9876543210", newLocation);  // Location field
+  
+  // Send the data
+  fetch(formUrl, {
+    method: "POST",
+    mode: "no-cors",
+    body: formData
+  }).then(() => {
+    localStorage.setItem("previousLocation", newLocation);  // Save updated location for future appends
+    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
+  }).catch(() => {
+    alert("❌ Failed to send attendance!");
+  });
 }
 
+// Sample Table to display data
+document.write(`
+  <table id="attendanceTable">
+    <tr>
+      <th>Date</th>
+      <th>Name</th>
+      <th>Check-In Time</th>
+      <th>Check-Out Time</th>
+      <th>Total Work Hours</th>
+      <th>Total Work Minutes</th>
+      <th>Remark</th>
+      <th>Location</th>
+    </tr>
+  </table>
+`);
 
+// HTML element to show action message
+document.body.insertAdjacentHTML("beforeend", `
+  <div id="actionMessage"></div>
+`);
