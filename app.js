@@ -8,14 +8,14 @@ function updateDateTime() {
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const timeString = now.toLocaleTimeString();  // Get time
   const dateString = now.toLocaleDateString(undefined, options);  // Get date with weekday
-  document.getElementById("datetime").innerHTML = ${dateString} | ${timeString};
+  document.getElementById("datetime").innerHTML = `${dateString} | ${timeString}`;
 }
 
 // Show saved staff name if available
 const staffNameDisplay = document.getElementById("staffNameDisplay");
 const storedName = localStorage.getItem("staffName");
 if (storedName) {
-  staffNameDisplay.innerHTML = 👤 ${storedName};  // Display name if available
+  staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
 } else {
   staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
 }
@@ -39,17 +39,17 @@ function checkLocation() {
   navigator.geolocation.getCurrentPosition(function(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
-    console.log(Detected Location: Latitude: ${latitude}, Longitude: ${longitude});
+    console.log(`Detected Location: Latitude: ${latitude}, Longitude: ${longitude}`);
 
     const distance = distanceBetween(latitude, longitude, officeLat, officeLng);
-    console.log(Distance from office: ${distance.toFixed(2)} meters);
+    console.log(`Distance from office: ${distance.toFixed(2)} meters`);
 
     if (distance <= maxDistanceMeters) {
-      proceedCheck("Used GPS", ${latitude}, ${longitude});
+      proceedCheck("Used GPS");
     } else {
       // Out of office area, ask user if want to proceed
       if (confirm("❌ You are not in office area!\n\nDo you still want to proceed with check-in/check-out?")) {
-        proceedCheck("No GPS", ${latitude}, ${longitude});
+        proceedCheck("No GPS");
       } else {
         alert("✅ Action cancelled.");
       }
@@ -57,25 +57,25 @@ function checkLocation() {
   }, function(error) {
     console.error("Error getting location", error);
     if (confirm("❌ Cannot get your location!\n\nDo you still want to proceed with check-in/check-out without GPS?")) {
-      proceedCheck("No GPS", "No Location");
+      proceedCheck("No GPS");
     } else {
       alert("✅ Action cancelled.");
     }
   });
 }
 
-function proceedCheck(remark, location) {
+function proceedCheck(remark) {
   const staffName = localStorage.getItem("staffName");
   if (!staffName) {
     const name = prompt("Enter your name:");
     localStorage.setItem("staffName", name);
-    checkToday(name, remark, location);
+    checkToday(name, remark);
   } else {
-    checkToday(staffName, remark, location);
+    checkToday(staffName, remark);
   }
 }
 
-function checkToday(name, remark, location) {
+function checkToday(name, remark) {
   const today = new Date().toISOString().slice(0,10);
   const lastAction = localStorage.getItem("lastActionDate");
 
@@ -88,7 +88,7 @@ function checkToday(name, remark, location) {
     localStorage.setItem("lastActionDate", today);
   }
 
-  sendAttendance(name, action, remark, location);
+  sendAttendance(name, action, remark);
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
@@ -114,21 +114,19 @@ function calculateWorkHours(checkInTime, checkOutTime) {
   return { hours: totalHours.toFixed(2), minutes: (totalMinutes).toFixed(0) }; // Return both hours and minutes
 }
 
-function sendAttendance(name, action, remark, location) {
+function sendAttendance(name, action, remark) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
   
   const formData = new FormData();
   formData.append("entry.2140323296", name);    // Replace with your actual entry ID for Name
   formData.append("entry.668867521", action);  // Replace with your actual entry ID for Action
-  formData.append("entry.1234567890", remark); // Replace with the appropriate field for Remark
-  formData.append("entry.0987654321", location); // Replace with the appropriate field for Location
   
   fetch(formUrl, {
     method: "POST",
     mode: "no-cors",
     body: formData
   }).then(() => {
-    alert(✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()});
+    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
   }).catch(() => {
     alert("❌ Failed to send attendance!");
   });
@@ -145,13 +143,13 @@ function displayAttendanceData(date, name, checkInTime, checkOutTime) {
   row.insertCell(1).textContent = name;
   row.insertCell(2).textContent = checkInTime;
   row.insertCell(3).textContent = checkOutTime;
-  row.insertCell(4).textContent = ${hours} hours;
-  row.insertCell(5).textContent = ${minutes} minutes;
+  row.insertCell(4).textContent = `${hours} hours`;
+  row.insertCell(5).textContent = `${minutes} minutes`;
   row.insertCell(6).textContent = remark;
 }
 
 // Sample Table
-document.write(
+document.write(`
   <table id="attendanceTable">
     <tr>
       <th>Date</th>
@@ -163,4 +161,4 @@ document.write(
       <th>Remark</th>
     </tr>
   </table>
-);
+`);
