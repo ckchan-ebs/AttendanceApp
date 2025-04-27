@@ -1,6 +1,6 @@
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
-const maxDistanceMeters = 500; // Allow 100m around office
+const maxDistanceMeters = 500; // Allow 500m around office
 
 // Update the current date and time with day
 function updateDateTime() {
@@ -78,19 +78,26 @@ function proceedCheck(remark, location) {
 }
 
 function checkToday(name, remark, location) {
-  const today = new Date().toISOString().slice(0,10);
-  const lastAction = localStorage.getItem("lastActionDate");
-
+  const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
+  const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
+  
+  // Display the status message based on the action
+  const actionMessageElement = document.getElementById("actionMessage");
+  
   let action;
   if (lastAction === today) {
+    // If the last action was on the same date, it's time to check out
     action = "Check-Out";
-    localStorage.removeItem("lastActionDate");
+    actionMessageElement.innerHTML = "You have already checked in. Please check out when you're done!";
+    localStorage.removeItem("lastActionDate"); // Clear last action date after check-out
   } else {
+    // If no check-out for today, it's check-in
     action = "Check-In";
-    localStorage.setItem("lastActionDate", today);
+    actionMessageElement.innerHTML = "You are currently checked out. Please check in to start your workday!";
+    localStorage.setItem("lastActionDate", today); // Save the current date as the last action date for future check-out
   }
 
-  sendAttendance(name, action, remark, location);
+  sendAttendance(name, action, remark, location); // Send attendance data to the form
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
@@ -153,4 +160,9 @@ document.write(`
       <th>Location</th>
     </tr>
   </table>
+`);
+
+// HTML element to show action message
+document.body.insertAdjacentHTML("beforeend", `
+  <div id="actionMessage"></div>
 `);
