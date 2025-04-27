@@ -156,11 +156,11 @@ function sendAttendance(name, action, remark, location) {
   const table = document.getElementById("attendanceTable");
   if (!table) {
     console.error("Attendance table not found!");
-    return;  // Exit the function if table is not found
+    return;  // Exit the function if the table is not found
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const workHours = calculateTodayWorkHours();
+  const workHours = calculateWorkHours(localStorage.getItem("checkInTime"), localStorage.getItem("checkOutTime"));
   const date = new Date().toLocaleDateString();
   
   // Insert a new row into the table
@@ -176,4 +176,5 @@ function sendAttendance(name, action, remark, location) {
 
   alert("Attendance recorded successfully!");
 }
+
 
