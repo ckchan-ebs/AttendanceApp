@@ -44,38 +44,40 @@ function checkLocation() {
     const distance = distanceBetween(latitude, longitude, officeLat, officeLng);
     console.log(`Distance from office: ${distance.toFixed(2)} meters`);
 
+    let locationInfo = `Latitude: ${latitude}, Longitude: ${longitude}`; // Store location info
     if (distance <= maxDistanceMeters) {
-      proceedCheck("Used GPS");
+      proceedCheck("Used GPS", locationInfo);
     } else {
       // Out of office area, ask user if want to proceed
       if (confirm("❌ You are not in office area!\n\nDo you still want to proceed with check-in/check-out?")) {
-        proceedCheck("No GPS");
+        proceedCheck("No GPS", "No Location");
       } else {
         alert("✅ Action cancelled.");
       }
     }
   }, function(error) {
     console.error("Error getting location", error);
+    let locationInfo = "No Location";
     if (confirm("❌ Cannot get your location!\n\nDo you still want to proceed with check-in/check-out without GPS?")) {
-      proceedCheck("No GPS");
+      proceedCheck("No GPS", locationInfo);
     } else {
       alert("✅ Action cancelled.");
     }
   });
 }
 
-function proceedCheck(remark) {
+function proceedCheck(remark, location) {
   const staffName = localStorage.getItem("staffName");
   if (!staffName) {
     const name = prompt("Enter your name:");
     localStorage.setItem("staffName", name);
-    checkToday(name, remark);
+    checkToday(name, remark, location);
   } else {
-    checkToday(staffName, remark);
+    checkToday(staffName, remark, location);
   }
 }
 
-function checkToday(name, remark) {
+function checkToday(name, remark, location) {
   const today = new Date().toISOString().slice(0,10);
   const lastAction = localStorage.getItem("lastActionDate");
 
@@ -88,67 +90,56 @@ function checkToday(name, remark) {
     localStorage.setItem("lastActionDate", today);
   }
 
-  sendAttendance(name, action, remark);
+  sendAttendance(name, action, remark, location);
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
-  // Parse times into Date objects (assuming times are provided as 'HH:mm')
   const [checkInHours, checkInMinutes] = checkInTime.split(':').map(Number);
   const [checkOutHours, checkOutMinutes] = checkOutTime.split(':').map(Number);
 
-  const checkInDate = new Date(2025, 3, 26, checkInHours, checkInMinutes); // Using 2025-04-26 as an example date
-  const checkOutDate = new Date(2025, 3, 26, checkOutHours, checkOutMinutes); // Same date
+  const checkInDate = new Date(2025, 3, 26, checkInHours, checkInMinutes);
+  const checkOutDate = new Date(2025, 3, 26, checkOutHours, checkOutMinutes);
 
-  // Calculate time difference in milliseconds
   const timeDiffMs = checkOutDate - checkInDate;
 
-  if (timeDiffMs <= 0) return { hours: 0, minutes: 0 }; // No work hours if check-out is before check-in
+  if (timeDiffMs <= 0) return { hours: 0, minutes: 0 };
 
-  // Convert milliseconds to minutes and subtract lunch break
-  const minutes = timeDiffMs / (1000 * 60); // Convert to minutes
-  const lunchBreak = 60; // 1 hour lunch break (could be modified based on your rules)
+  const minutes = timeDiffMs / (1000 * 60);
+  const lunchBreak = 60; // 1 hour lunch break
   const totalMinutes = minutes - lunchBreak;
 
-  const totalHours = totalMinutes / 60; // Convert back to hours
+  const totalHours = totalMinutes / 60;
 
-  return { hours: totalHours.toFixed(2), minutes: (totalMinutes).toFixed(0) }; // Return both hours and minutes
+  return { hours: totalHours.toFixed(2), minutes: (totalMinutes).toFixed(0) };
 }
 
-function sendAttendance(name, action, remark) {
+function sendAttendance(name, action, remark, location) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
   
   const formData = new FormData();
-  formData.append("entry.2140323296", name);    // Replace with your actual entry ID for Name
-  formData.append("entry.668867521", action);  // Replace with your actual entry ID for Action
+  formData.append("entry.2140323296", name);  // Name field
+  formData.append("entry.668867521", action);  // Action field
+  formData.append("entry.1234567890", remark); // Append remark to existing remark (if any)
+
+  // To store location, ensure to append the new location
+  const previousLocation = localStorage.getItem("previousLocation") || "";
+  const newLocation = previousLocation + (previousLocation ? " | " : "") + location;  // Append location
+  formData.append("entry.9876543210", newLocation);  // Location field
   
+  // Send the data
   fetch(formUrl, {
     method: "POST",
     mode: "no-cors",
     body: formData
   }).then(() => {
+    localStorage.setItem("previousLocation", newLocation);  // Save updated location for future appends
     alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
   }).catch(() => {
     alert("❌ Failed to send attendance!");
   });
 }
 
-// To display the data table
-function displayAttendanceData(date, name, checkInTime, checkOutTime) {
-  const { hours, minutes } = calculateWorkHours(checkInTime, checkOutTime);
-  
-  const table = document.getElementById("attendanceTable");
-  const row = table.insertRow();
-  
-  row.insertCell(0).textContent = date;
-  row.insertCell(1).textContent = name;
-  row.insertCell(2).textContent = checkInTime;
-  row.insertCell(3).textContent = checkOutTime;
-  row.insertCell(4).textContent = `${hours} hours`;
-  row.insertCell(5).textContent = `${minutes} minutes`;
-  row.insertCell(6).textContent = remark;
-}
-
-// Sample Table
+// Sample Table to display data
 document.write(`
   <table id="attendanceTable">
     <tr>
@@ -159,6 +150,7 @@ document.write(`
       <th>Total Work Hours</th>
       <th>Total Work Minutes</th>
       <th>Remark</th>
+      <th>Location</th>
     </tr>
   </table>
 `);
