@@ -14,6 +14,7 @@
     }
     h2 {
       color: #333;
+      font-size: 24px;
     }
     .container {
       margin-top: 30px;
@@ -29,16 +30,27 @@
       color: #333;
     }
     button {
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 12px 24px;
+      font-size: 18px;
       background-color: #4CAF50;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
     button:hover {
       background-color: #45a049;
+    }
+    /* Make the page responsive */
+    @media (max-width: 600px) {
+      button {
+        width: 100%;
+        font-size: 16px;
+      }
+      #staffNameDisplay {
+        font-size: 18px;
+      }
     }
   </style>
 </head>
@@ -51,7 +63,7 @@
   <div id="staffNameDisplay"></div> <!-- Display staff name if available -->
 
   <div class="container">
-    <button id="attendanceButton" onclick="checkLocation()">Scan Attendance</button>
+    <button id="attendanceButton" onclick="checkLocation()">Punch it</button>
   </div>
 
 </body>
