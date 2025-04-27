@@ -177,42 +177,26 @@ function calculateTodayWorkHours() {
   const [inH, inM, inS] = checkInTime.split(':').map(Number);
   const [outH, outM, outS] = checkOutTime.split(':').map(Number);
   
-  const inDate = new Date(2025, 3, 26, inH, inM, inS);
-  const outDate = new Date(2025, 3, 26, outH, outM, outS);
-  
-  let diffMs = outDate - inDate;
-  if (diffMs <= 0) return "Error";
-
-  const diffMinutes = diffMs / (1000 * 60) - 60; // minus 1 hour lunch
-  const hours = Math.floor(diffMinutes / 60);
-  const minutes = Math.floor(diffMinutes % 60);
-
-  return `${hours}h ${minutes}m`;
+  if (outH < inH || (outH === inH && outM < inM)) {
+    return "Invalid Time";  // Invalid checkout time before check-in time
+  }
+  return calculateWorkHours(checkInTime, checkOutTime);
 }
 
-
 function sendAttendance(name, action, remark, location) {
-  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
-  
-  const formData = new FormData();
-  formData.append("entry.2140323296", name);  // Name field
-  formData.append("entry.668867521", action);  // Action field
-  formData.append("entry.1234567890", remark); // Append remark to existing remark (if any)
+  const today = new Date().toISOString().slice(0, 10);
+  const workHours = calculateTodayWorkHours();
+  const date = new Date().toLocaleDateString();
+  const table = document.getElementById("attendanceTable");
+  const row = table.insertRow();
+  row.insertCell(0).textContent = date;  // Date
+  row.insertCell(1).textContent = name;  // Name
+  row.insertCell(2).textContent = localStorage.getItem("checkInTime");  // Check-In Time
+  row.insertCell(3).textContent = localStorage.getItem("checkOutTime");  // Check-Out Time
+  row.insertCell(4).textContent = workHours.hours;  // Work Hours
+  row.insertCell(5).textContent = workHours.minutes;  // Work Minutes
+  row.insertCell(6).textContent = remark;  // Remark
+  row.insertCell(7).textContent = location;  // Location
 
-  // To store location, ensure to append the new location
-  const previousLocation = localStorage.getItem("previousLocation") || "";
-  const newLocation = previousLocation + (previousLocation ? " | " : "") + location;  // Append location
-  formData.append("entry.9876543210", newLocation);  // Location field
-  
-  // Send the data
-  fetch(formUrl, {
-    method: "POST",
-    mode: "no-cors",
-    body: formData
-  }).then(() => {
-    localStorage.setItem("previousLocation", newLocation);  // Save updated location for future appends
-    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
-  }).catch(() => {
-    alert("❌ Failed to send attendance!");
-  });
+  alert("Attendance recorded successfully!");
 }
