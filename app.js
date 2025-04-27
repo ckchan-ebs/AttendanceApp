@@ -152,10 +152,18 @@ function calculateWorkHours(checkInTime, checkOutTime) {
 }
 
 function sendAttendance(name, action, remark, location) {
+  // Check if the table exists before proceeding
+  const table = document.getElementById("attendanceTable");
+  if (!table) {
+    console.error("Attendance table not found!");
+    return;  // Exit the function if table is not found
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const workHours = calculateTodayWorkHours();
   const date = new Date().toLocaleDateString();
-  const table = document.getElementById("attendanceTable");
+  
+  // Insert a new row into the table
   const row = table.insertRow();
   row.insertCell(0).textContent = date;  // Date
   row.insertCell(1).textContent = name;  // Name
@@ -168,3 +176,4 @@ function sendAttendance(name, action, remark, location) {
 
   alert("Attendance recorded successfully!");
 }
+
