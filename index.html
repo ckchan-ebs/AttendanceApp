@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Attendance Check-In / Check-Out</title>
+  <title>Attendance Check-In</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script defer src="app.js"></script>
   <style>
@@ -28,6 +28,11 @@
       font-size: 20px;
       margin-bottom: 30px;
       color: #333;
+    }
+    #checkStatus {
+      font-size: 18px;
+      margin-bottom: 30px;
+      color: #888;
     }
     button {
       padding: 12px 24px;
@@ -61,11 +66,57 @@
   <!-- Display current date, time, and staff name -->
   <div id="datetime"></div> <!-- Current date and time display -->
   <div id="staffNameDisplay"></div> <!-- Display staff name if available -->
-  <div id="checkStatus"></div> <!-- Display check-in/check-out status -->
+
+  <!-- Display check-in/check-out status -->
+  <div id="checkStatus"></div>
 
   <div class="container">
-    <button id="attendanceButton" onclick="checkLocation()">Punch it</button>
+    <button id="attendanceButton" onclick="checkLocation()">Scan Attendance</button>
   </div>
+
+  <script>
+    // Update the current date and time with day
+    function updateDateTime() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const timeString = now.toLocaleTimeString();  // Get time
+      const dateString = now.toLocaleDateString(undefined, options);  // Get date with weekday
+      document.getElementById("datetime").innerHTML = `${dateString} | ${timeString}`;
+    }
+
+    // Show saved staff name if available
+    const staffNameDisplay = document.getElementById("staffNameDisplay");
+    const storedName = localStorage.getItem("staffName");
+    if (storedName) {
+      staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
+    } else {
+      staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
+    }
+
+    // Update time every second
+    setInterval(updateDateTime, 1000);
+
+    // Check the last action and display the status before the button is clicked
+    function updateCheckStatus() {
+      const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
+      const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
+
+      const checkStatusDiv = document.getElementById("checkStatus");
+
+      if (lastAction === today) {
+        // If the last action was on the same date, it’s time to check out
+        checkStatusDiv.innerHTML = "You need to check out today.";
+      } else {
+        // If no check-out for today, it’s check-in time
+        checkStatusDiv.innerHTML = "You need to check in today.";
+      }
+    }
+
+    // Call the updateCheckStatus function on page load
+    updateCheckStatus();
+
+    // Your checkLocation function here (as in your existing code)
+  </script>
 
 </body>
 </html>
