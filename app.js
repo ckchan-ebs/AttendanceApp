@@ -45,11 +45,11 @@ function checkLocation() {
     console.log(`Distance from office: ${distance.toFixed(2)} meters`);
 
     if (distance <= maxDistanceMeters) {
-      proceedCheck("Used GPS", `${latitude}, ${longitude}`);
+      proceedCheck("Used GPS");
     } else {
       // Out of office area, ask user if want to proceed
       if (confirm("❌ You are not in office area!\n\nDo you still want to proceed with check-in/check-out?")) {
-        proceedCheck("No GPS", `${latitude}, ${longitude}`);
+        proceedCheck("No GPS");
       } else {
         alert("✅ Action cancelled.");
       }
@@ -57,25 +57,25 @@ function checkLocation() {
   }, function(error) {
     console.error("Error getting location", error);
     if (confirm("❌ Cannot get your location!\n\nDo you still want to proceed with check-in/check-out without GPS?")) {
-      proceedCheck("No GPS", "No Location");
+      proceedCheck("No GPS");
     } else {
       alert("✅ Action cancelled.");
     }
   });
 }
 
-function proceedCheck(remark, location) {
+function proceedCheck(remark) {
   const staffName = localStorage.getItem("staffName");
   if (!staffName) {
     const name = prompt("Enter your name:");
     localStorage.setItem("staffName", name);
-    checkToday(name, remark, location);
+    checkToday(name, remark);
   } else {
-    checkToday(staffName, remark, location);
+    checkToday(staffName, remark);
   }
 }
 
-function checkToday(name, remark, location) {
+function checkToday(name, remark) {
   const today = new Date().toISOString().slice(0,10);
   const lastAction = localStorage.getItem("lastActionDate");
 
@@ -88,7 +88,7 @@ function checkToday(name, remark, location) {
     localStorage.setItem("lastActionDate", today);
   }
 
-  sendAttendance(name, action, remark, location);
+  sendAttendance(name, action, remark);
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
@@ -114,14 +114,12 @@ function calculateWorkHours(checkInTime, checkOutTime) {
   return { hours: totalHours.toFixed(2), minutes: (totalMinutes).toFixed(0) }; // Return both hours and minutes
 }
 
-function sendAttendance(name, action, remark, location) {
+function sendAttendance(name, action, remark) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
   
   const formData = new FormData();
   formData.append("entry.2140323296", name);    // Replace with your actual entry ID for Name
   formData.append("entry.668867521", action);  // Replace with your actual entry ID for Action
-  formData.append("entry.1234567890", remark); // Replace with the appropriate field for Remark
-  formData.append("entry.0987654321", location); // Replace with the appropriate field for Location
   
   fetch(formUrl, {
     method: "POST",
