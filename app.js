@@ -40,10 +40,8 @@ function updateCheckStatus() {
   }
 }
 
-
 // Call the updateCheckStatus function on page load
 updateCheckStatus();
-
 
 // Update time every second
 setInterval(updateDateTime, 1000);
@@ -103,26 +101,29 @@ function proceedCheck(remark, location) {
 }
 
 function checkToday(name, remark, location) {
-  const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
-  const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
+  const today = new Date().toISOString().slice(0, 10);
+  const nowTime = new Date().toLocaleTimeString();
   
-  // Display the status message based on the action
+  const lastAction = localStorage.getItem("lastActionDate");
   const actionMessageElement = document.getElementById("actionMessage");
   
   let action;
   if (lastAction === today) {
-    // If the last action was on the same date, it's time to check out
+    // Already checked-in, now doing check-out
     action = "Check-Out";
-    actionMessageElement.innerHTML = "You have already checked in. Please check out when you're done!";
-    localStorage.removeItem("lastActionDate"); // Clear last action date after check-out
+    actionMessageElement.innerHTML = `✅ ${name}, you have checked out at ${nowTime}.`;
+    localStorage.setItem("checkOutTime", nowTime);  // Save check-out time
   } else {
-    // If no check-out for today, it's check-in
+    // First time today, doing check-in
     action = "Check-In";
-    actionMessageElement.innerHTML = "You are currently checked out. Please check in to start your workday!";
-    localStorage.setItem("lastActionDate", today); // Save the current date as the last action date for future check-out
+    actionMessageElement.innerHTML = `✅ ${name}, you have checked in at ${nowTime}.`;
+    localStorage.setItem("lastActionDate", today);   // Save today's date
+    localStorage.setItem("checkInTime", nowTime);     // Save check-in time
+    localStorage.removeItem("checkOutTime");          // Clear previous check-out time
   }
 
-  sendAttendance(name, action, remark, location); // Send attendance data to the form
+  sendAttendance(name, action, remark, location);
+  updateCheckStatus(); // <-- ADD this to update button text immediately
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
@@ -144,6 +145,30 @@ function calculateWorkHours(checkInTime, checkOutTime) {
 
   return { hours: totalHours.toFixed(2), minutes: (totalMinutes).toFixed(0) };
 }
+
+function calculateTodayWorkHours() {
+  const checkInTime = localStorage.getItem("checkInTime");
+  const checkOutTime = localStorage.getItem("checkOutTime");
+  if (!checkInTime || !checkOutTime) {
+    return "Incomplete"; // Not both times exist
+  }
+  
+  const [inH, inM, inS] = checkInTime.split(':').map(Number);
+  const [outH, outM, outS] = checkOutTime.split(':').map(Number);
+  
+  const inDate = new Date(2025, 3, 26, inH, inM, inS);
+  const outDate = new Date(2025, 3, 26, outH, outM, outS);
+  
+  let diffMs = outDate - inDate;
+  if (diffMs <= 0) return "Error";
+
+  const diffMinutes = diffMs / (1000 * 60) - 60; // minus 1 hour lunch
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = Math.floor(diffMinutes % 60);
+
+  return `${hours}h ${minutes}m`;
+}
+
 
 function sendAttendance(name, action, remark, location) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
