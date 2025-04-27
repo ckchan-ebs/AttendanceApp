@@ -21,20 +21,25 @@ if (storedName) {
 }
 
 // Check the last action and display the status before the button is clicked
+// Update the button text based on the check-in or check-out status
 function updateCheckStatus() {
   const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
   const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
 
   const checkStatusDiv = document.getElementById("checkStatus");
+  const attendanceButton = document.getElementById("attendanceButton");
 
   if (lastAction === today) {
     // If the last action was on the same date, it’s time to check out
     checkStatusDiv.innerHTML = "You need to check out today.";
+    attendanceButton.innerHTML = "Check Out";  // Update button text to "Check Out"
   } else {
     // If no check-out for today, it’s check-in time
     checkStatusDiv.innerHTML = "You need to check in today.";
+    attendanceButton.innerHTML = "Check In";  // Update button text to "Check In"
   }
 }
+
 
 // Call the updateCheckStatus function on page load
 updateCheckStatus();
