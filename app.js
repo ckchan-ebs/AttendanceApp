@@ -1,6 +1,6 @@
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
-const maxDistanceMeters = 500; // Allow 500m around office
+const maxDistanceMeters = 500; // Allow 100m around office
 
 // Update the current date and time with day
 function updateDateTime() {
@@ -8,14 +8,14 @@ function updateDateTime() {
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const timeString = now.toLocaleTimeString();  // Get time
   const dateString = now.toLocaleDateString(undefined, options);  // Get date with weekday
-  document.getElementById("datetime").innerHTML = `${dateString} | ${timeString}`;
+  document.getElementById("datetime").innerHTML = ${dateString} | ${timeString};
 }
 
 // Show saved staff name if available
 const staffNameDisplay = document.getElementById("staffNameDisplay");
 const storedName = localStorage.getItem("staffName");
 if (storedName) {
-  staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
+  staffNameDisplay.innerHTML = 👤 ${storedName};  // Display name if available
 } else {
   staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
 }
@@ -39,12 +39,12 @@ function checkLocation() {
   navigator.geolocation.getCurrentPosition(function(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
-    console.log(`Detected Location: Latitude: ${latitude}, Longitude: ${longitude}`);
+    console.log(Detected Location: Latitude: ${latitude}, Longitude: ${longitude});
 
     const distance = distanceBetween(latitude, longitude, officeLat, officeLng);
-    console.log(`Distance from office: ${distance.toFixed(2)} meters`);
+    console.log(Distance from office: ${distance.toFixed(2)} meters);
 
-    let locationInfo = `Latitude: ${latitude}, Longitude: ${longitude}`; // Store location info
+    let locationInfo = Latitude: ${latitude}, Longitude: ${longitude}; // Store location info
     if (distance <= maxDistanceMeters) {
       proceedCheck("Used GPS", locationInfo);
     } else {
@@ -78,26 +78,19 @@ function proceedCheck(remark, location) {
 }
 
 function checkToday(name, remark, location) {
-  const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
-  const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
-  
-  // Display the status message based on the action
-  const actionMessageElement = document.getElementById("actionMessage");
-  
+  const today = new Date().toISOString().slice(0,10);
+  const lastAction = localStorage.getItem("lastActionDate");
+
   let action;
   if (lastAction === today) {
-    // If the last action was on the same date, it's time to check out
     action = "Check-Out";
-    actionMessageElement.innerHTML = "You have already checked in. Please check out when you're done!";
-    localStorage.removeItem("lastActionDate"); // Clear last action date after check-out
+    localStorage.removeItem("lastActionDate");
   } else {
-    // If no check-out for today, it's check-in
     action = "Check-In";
-    actionMessageElement.innerHTML = "You are currently checked out. Please check in to start your workday!";
-    localStorage.setItem("lastActionDate", today); // Save the current date as the last action date for future check-out
+    localStorage.setItem("lastActionDate", today);
   }
 
-  sendAttendance(name, action, remark, location); // Send attendance data to the form
+  sendAttendance(name, action, remark, location);
 }
 
 function calculateWorkHours(checkInTime, checkOutTime) {
@@ -140,14 +133,14 @@ function sendAttendance(name, action, remark, location) {
     body: formData
   }).then(() => {
     localStorage.setItem("previousLocation", newLocation);  // Save updated location for future appends
-    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
+    alert(✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()});
   }).catch(() => {
     alert("❌ Failed to send attendance!");
   });
 }
 
 // Sample Table to display data
-document.write(`
+document.write(
   <table id="attendanceTable">
     <tr>
       <th>Date</th>
@@ -160,9 +153,6 @@ document.write(`
       <th>Location</th>
     </tr>
   </table>
-`);
+); 
 
-// HTML element to show action message
-document.body.insertAdjacentHTML("beforeend", `
-  <div id="actionMessage"></div>
-`);
+
