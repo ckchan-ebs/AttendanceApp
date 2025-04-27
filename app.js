@@ -1,3 +1,24 @@
+// Sample Table to display data
+document.write(`
+  <table id="attendanceTable">
+    <tr>
+      <th>Date</th>
+      <th>Name</th>
+      <th>Check-In Time</th>
+      <th>Check-Out Time</th>
+      <th>Total Work Hours</th>
+      <th>Total Work Minutes</th>
+      <th>Remark</th>
+      <th>Location</th>
+    </tr>
+  </table>
+`);
+
+// HTML element to show action message
+document.body.insertAdjacentHTML("beforeend", `
+  <div id="actionMessage"></div>
+`);
+
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
 const maxDistanceMeters = 500; // Allow 500m around office
@@ -12,7 +33,7 @@ function updateDateTime() {
 }
 
 // Show saved staff name if available
-const staffNameDisplay = document.getElementById("staffNameDisplay");
+let staffNameDisplay = document.getElementById('staffNameDisplay');
 const storedName = localStorage.getItem("staffName");
 if (storedName) {
   staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
@@ -195,24 +216,3 @@ function sendAttendance(name, action, remark, location) {
     alert("❌ Failed to send attendance!");
   });
 }
-
-// Sample Table to display data
-document.write(`
-  <table id="attendanceTable">
-    <tr>
-      <th>Date</th>
-      <th>Name</th>
-      <th>Check-In Time</th>
-      <th>Check-Out Time</th>
-      <th>Total Work Hours</th>
-      <th>Total Work Minutes</th>
-      <th>Remark</th>
-      <th>Location</th>
-    </tr>
-  </table>
-`);
-
-// HTML element to show action message
-document.body.insertAdjacentHTML("beforeend", `
-  <div id="actionMessage"></div>
-`);
