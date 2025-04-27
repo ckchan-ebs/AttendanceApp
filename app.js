@@ -1,27 +1,7 @@
+// Declare variables and constants outside any function or block to avoid re-declaration
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
 const maxDistanceMeters = 500; // Allow 500m around office
-
-// Sample Table to display data
-document.write(`
-  <table id="attendanceTable">
-    <tr>
-      <th>Date</th>
-      <th>Name</th>
-      <th>Check-In Time</th>
-      <th>Check-Out Time</th>
-      <th>Total Work Hours</th>
-      <th>Total Work Minutes</th>
-      <th>Remark</th>
-      <th>Location</th>
-    </tr>
-  </table>
-`);
-
-// HTML element to show action message
-document.body.insertAdjacentHTML("beforeend", `
-  <div id="actionMessage"></div>
-`);
 
 // Update the current date and time with day
 function updateDateTime() {
@@ -33,16 +13,17 @@ function updateDateTime() {
 }
 
 // Show saved staff name if available
-let staffNameDisplay = document.getElementById('staffNameDisplay');
-const storedName = localStorage.getItem("staffName");
-if (storedName) {
-  staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
-} else {
-  staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
+function showStaffName() {
+  const staffNameDisplay = document.getElementById('staffNameDisplay');
+  const storedName = localStorage.getItem("staffName");
+  if (storedName) {
+    staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
+  } else {
+    staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
+  }
 }
 
 // Check the last action and display the status before the button is clicked
-// Update the button text based on the check-in or check-out status
 function updateCheckStatus() {
   const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
   const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
@@ -61,15 +42,17 @@ function updateCheckStatus() {
   }
 }
 
-// Call the updateCheckStatus function on page load
-updateCheckStatus();
+// Update the page on load
+window.onload = function() {
+  updateCheckStatus();
+  showStaffName();
+  setInterval(updateDateTime, 1000);
+}
 
-// Update time every second
-setInterval(updateDateTime, 1000);
-
+// Calculate distance between two locations (Haversine formula)
 function distanceBetween(lat1, lon1, lat2, lon2) {
   const toRad = x => x * Math.PI / 180;
-  const R = 6371e3;
+  const R = 6371e3; // Radius of the Earth in meters
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -79,6 +62,7 @@ function distanceBetween(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Handle checking location for attendance
 function checkLocation() {
   navigator.geolocation.getCurrentPosition(function(position) {
     const latitude = position.coords.latitude;
@@ -165,22 +149,6 @@ function calculateWorkHours(checkInTime, checkOutTime) {
   const totalHours = totalMinutes / 60;
 
   return { hours: totalHours.toFixed(2), minutes: (totalMinutes).toFixed(0) };
-}
-
-function calculateTodayWorkHours() {
-  const checkInTime = localStorage.getItem("checkInTime");
-  const checkOutTime = localStorage.getItem("checkOutTime");
-  if (!checkInTime || !checkOutTime) {
-    return "Incomplete"; // Not both times exist
-  }
-  
-  const [inH, inM, inS] = checkInTime.split(':').map(Number);
-  const [outH, outM, outS] = checkOutTime.split(':').map(Number);
-  
-  if (outH < inH || (outH === inH && outM < inM)) {
-    return "Invalid Time";  // Invalid checkout time before check-in time
-  }
-  return calculateWorkHours(checkInTime, checkOutTime);
 }
 
 function sendAttendance(name, action, remark, location) {
