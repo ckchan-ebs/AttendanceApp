@@ -1,3 +1,7 @@
+const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
+const officeLng = 101.6110718;
+const maxDistanceMeters = 500; // Allow 500m around office
+
 // Sample Table to display data
 document.write(`
   <table id="attendanceTable">
@@ -18,10 +22,6 @@ document.write(`
 document.body.insertAdjacentHTML("beforeend", `
   <div id="actionMessage"></div>
 `);
-
-const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
-const officeLng = 101.6110718;
-const maxDistanceMeters = 500; // Allow 500m around office
 
 // Update the current date and time with day
 function updateDateTime() {
