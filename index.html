@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Attendance Check-In</title>
+  <title>Attendance Check-In / Check-Out</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script defer src="app.js"></script>
   <style>
@@ -96,19 +96,22 @@
     // Update time every second
     setInterval(updateDateTime, 1000);
 
-    // Check the last action and display the status before the button is clicked
+    // Update the button text and status based on check-in/check-out
     function updateCheckStatus() {
       const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
       const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
 
       const checkStatusDiv = document.getElementById("checkStatus");
+      const attendanceButton = document.getElementById("attendanceButton");
 
       if (lastAction === today) {
         // If the last action was on the same date, it’s time to check out
         checkStatusDiv.innerHTML = "You need to check out today.";
+        attendanceButton.innerHTML = "Check Out";  // Update button text to "Check Out"
       } else {
         // If no check-out for today, it’s check-in time
         checkStatusDiv.innerHTML = "You need to check in today.";
+        attendanceButton.innerHTML = "Check In";  // Update button text to "Check In"
       }
     }
 
