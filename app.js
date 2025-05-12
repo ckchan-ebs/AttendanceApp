@@ -128,14 +128,10 @@ function sendAttendance(name, action, remark, location) {
 }
 
 function showSummary() {
-  const name = localStorage.getItem("staffName");
+  const name = localStorage.getItem("staffName") || "-";
   const date = new Date().toLocaleDateString();
   const checkIn = localStorage.getItem("checkInTime") || "-";
   const checkOut = localStorage.getItem("checkOutTime") || "-";
-  const hours = localStorage.getItem("workHours") || "-";
-  const minutes = localStorage.getItem("workMinutes") || "-";
-  const remark = localStorage.getItem("previousRemark") || "-";
-  const location = localStorage.getItem("previousLocation") || "-";
 
   let table = document.getElementById("summaryTable");
   if (!table) {
@@ -148,7 +144,6 @@ function showSummary() {
       <thead>
         <tr>
           <th>Date</th><th>Name</th><th>Check-In</th><th>Check-Out</th>
-          <th>Hours</th><th>Minutes</th><th>Remark</th><th>Location</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -163,13 +158,10 @@ function showSummary() {
       <td>${name}</td>
       <td>${checkIn}</td>
       <td>${checkOut}</td>
-      <td>${hours}</td>
-      <td>${minutes}</td>
-      <td>${remark}</td>
-      <td>${location}</td>
     </tr>
   `;
 }
+
 
 // Load summary on page load if existing
 document.addEventListener("DOMContentLoaded", showSummary);
