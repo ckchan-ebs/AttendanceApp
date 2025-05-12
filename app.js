@@ -117,13 +117,31 @@ function sendAttendance(name, action, remark, location) {
 }
 
 function loadHistoryFromSheet() {
+  const storedName = localStorage.getItem("staffName");
+  if (!storedName) {
+    alert("❗ Please check in at least once to save your name.");
+    return;
+  }
+
+  const normalizedStoredName = storedName.trim().toLowerCase();
+
   fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
     .then(response => response.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
       tbody.innerHTML = "";
 
-      data.reverse().forEach(record => {
+      const filteredData = data.filter(record => {
+        const recordName = (record["Name"] || "").trim().toLowerCase();
+        return recordName === normalizedStoredName;
+      });
+
+      if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8">No records found for ${storedName}</td></tr>`;
+        return;
+      }
+
+      filteredData.reverse().forEach(record => {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
@@ -144,6 +162,7 @@ function loadHistoryFromSheet() {
       console.error("Failed to load history:", error);
     });
 }
+
 
 window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
