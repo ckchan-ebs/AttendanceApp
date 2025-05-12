@@ -133,7 +133,7 @@ function loadHistoryFromSheet() {
 
       const filteredData = data.filter(record => {
         const recordName = (record["Name"] || "").trim().toLowerCase();
-        return recordName === normalizedStoredName;
+        return recordName && recordName === normalizedStoredName;
       });
 
       if (filteredData.length === 0) {
@@ -151,6 +151,8 @@ function loadHistoryFromSheet() {
           <td>${record["Check-Out Time"] || ""}</td>
           <td>${record["Total Work Hours"] || ""}</td>
           <td>${record["Work in Minutes"] || ""}</td>
+          <td>${record["Remark"] || ""}</td>
+          <td>${record["Location"] || ""}</td>
         `;
 
         tbody.appendChild(tr);
@@ -160,7 +162,6 @@ function loadHistoryFromSheet() {
       console.error("Failed to load history:", error);
     });
 }
-
 
 window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
