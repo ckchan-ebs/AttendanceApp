@@ -117,7 +117,7 @@ function sendAttendance(name, action, remark, location) {
 }
 
 function loadHistoryFromSheet() {
-  fetch('https://script.google.com/macros/s/YOUR_DEPLOYED_URL/exec')
+  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
     .then(response => response.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
@@ -144,3 +144,7 @@ function loadHistoryFromSheet() {
       console.error("Failed to load history:", error);
     });
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadHistoryFromSheet();
+});
