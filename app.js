@@ -115,3 +115,32 @@ function sendAttendance(name, action, remark, location) {
     alert("❌ Failed to send attendance!");
   });
 }
+
+function loadHistoryFromSheet() {
+  fetch('https://script.google.com/macros/s/YOUR_DEPLOYED_URL/exec')
+    .then(response => response.json())
+    .then(data => {
+      const tbody = document.getElementById("historyBody");
+      tbody.innerHTML = "";
+
+      data.reverse().forEach(record => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${record["Date"] || ""}</td>
+          <td>${record["Name"] || ""}</td>
+          <td>${record["Check-In Time"] || ""}</td>
+          <td>${record["Check-Out Time"] || ""}</td>
+          <td>${record["Total Work Hours"] || ""}</td>
+          <td>${record["Work in Minutes"] || ""}</td>
+          <td>${record["Remark"] || ""}</td>
+          <td>${record["Location"] || ""}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(error => {
+      console.error("Failed to load history:", error);
+    });
+}
