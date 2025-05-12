@@ -151,8 +151,6 @@ function loadHistoryFromSheet() {
           <td>${record["Check-Out Time"] || ""}</td>
           <td>${record["Total Work Hours"] || ""}</td>
           <td>${record["Work in Minutes"] || ""}</td>
-          <td>${record["Remark"] || ""}</td>
-          <td>${record["Location"] || ""}</td>
         `;
 
         tbody.appendChild(tr);
