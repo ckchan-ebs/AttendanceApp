@@ -201,16 +201,20 @@
 
     function loadHistoryFromSheet() {
       const name = localStorage.getItem("staffName");
-      if (!name) return alert("❗ Please check in at least once to save your name.");
+      if (!name) {
+        alert("❗ Please check in at least once to save your name.");
+        return;
+      }
       const normName = name.trim().toLowerCase();
-    
       const month = parseInt(document.getElementById("monthSelect").value);
       const year = parseInt(document.getElementById("yearSelect").value);
+    
+      console.log("Loading history for:", normName, month, year); // Debug log
     
       fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
         .then(res => res.json())
         .then(data => {
-          console.log("Received Data:", data); // Add logging here
+          console.log("Received data:", data); // Debug log
     
           const tbody = document.getElementById("historyBody");
           tbody.innerHTML = "";
@@ -222,8 +226,6 @@
             const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
             return recName === normName && recMonth === month && recYear === year;
           });
-    
-          console.log("Filtered Data:", filtered); // Add logging here
     
           if (filtered.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
@@ -245,7 +247,10 @@
             tbody.appendChild(tr);
           });
         })
-        .catch(err => console.error("History load error:", err));
+        .catch(err => {
+          console.error("History load error:", err);
+          alert("❌ Failed to load attendance history.");
+        });
     }
   
     window.addEventListener("DOMContentLoaded", () => {
