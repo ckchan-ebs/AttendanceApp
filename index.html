@@ -210,6 +210,8 @@
       fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
         .then(res => res.json())
         .then(data => {
+          console.log("Received Data:", data); // Add logging here
+    
           const tbody = document.getElementById("historyBody");
           tbody.innerHTML = "";
     
@@ -220,6 +222,8 @@
             const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
             return recName === normName && recMonth === month && recYear === year;
           });
+    
+          console.log("Filtered Data:", filtered); // Add logging here
     
           if (filtered.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
@@ -243,7 +247,7 @@
         })
         .catch(err => console.error("History load error:", err));
     }
-    
+  
     window.addEventListener("DOMContentLoaded", () => {
       loadMonthYearDropdowns();
       loadHistoryFromSheet();
