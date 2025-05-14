@@ -155,27 +155,33 @@
       const name = localStorage.getItem("staffName") || prompt("Enter your name:");
       if (!name) return;
       localStorage.setItem("staffName", name);
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date();
+      const currentTime = today.toLocaleString();  // Get the current local time in a readable format
       const lastAction = localStorage.getItem("lastActionDate");
-      const action = (lastAction === today) ? "Check-Out" : "Check-In";
-      if (action === "Check-Out") localStorage.removeItem("lastActionDate");
-      else localStorage.setItem("lastActionDate", today);
-      sendAttendance(name, action, remark, location);
+      const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
+      
+      if (action === "Check-Out") {
+        localStorage.removeItem("lastActionDate");
+      } else {
+        localStorage.setItem("lastActionDate", today.toISOString().slice(0, 10));
+      }
+      sendAttendance(name, action, remark, location, currentTime);
     }
-
-    function sendAttendance(name, action, remark, location) {
+    
+    function sendAttendance(name, action, remark, location, checkInTime) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
       const formData = new FormData();
       formData.append("entry.2140323296", name);
       formData.append("entry.668867521", action);
       formData.append("entry.1234567890", remark);
       formData.append("entry.9876543210", location);
-
+      formData.append("entry.1234567891", checkInTime);  // Append the actual time
+    
       fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
-        .then(() => alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`))
+        .then(() => alert(`✅ ${action} successful for ${name} at ${checkInTime}`))
         .catch(() => alert("❌ Failed to send attendance!"));
     }
-
+    
     function loadMonthYearDropdowns() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
