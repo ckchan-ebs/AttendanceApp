@@ -80,13 +80,9 @@
     <h3>📜 Attendance History</h3>
     <div>
       <label>Month:</label>
-      <select id="monthSelect" onchange="loadHistoryFromSheet()">
-        <!-- Populated by JS -->
-      </select>
+      <select id="monthSelect" onchange="loadHistoryFromSheet()"></select>
       <label>Year:</label>
-      <select id="yearSelect" onchange="loadHistoryFromSheet()">
-        <!-- Populated by JS -->
-      </select>
+      <select id="yearSelect" onchange="loadHistoryFromSheet()"></select>
     </div>
 
     <table>
@@ -119,6 +115,7 @@
       document.getElementById("datetime").innerHTML = `${now.toLocaleDateString(undefined, options)} | ${now.toLocaleTimeString()}`;
     }
     setInterval(updateDateTime, 1000);
+    updateDateTime();
 
     const staffNameDisplay = document.getElementById("staffNameDisplay");
     const storedName = localStorage.getItem("staffName");
@@ -152,22 +149,25 @@
     }
 
     function proceedCheck(remark, location) {
-      const name = localStorage.getItem("staffName") || prompt("Enter your name:");
+      let name = localStorage.getItem("staffName") || prompt("Enter your name:");
       if (!name) return;
       localStorage.setItem("staffName", name);
+      staffNameDisplay.textContent = `👤 ${name}`;
+
       const today = new Date();
-      const currentTime = today.toLocaleString();  // Get the current local time in a readable format
+      const currentTime = today.toLocaleString();
       const lastAction = localStorage.getItem("lastActionDate");
       const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
-      
+
       if (action === "Check-Out") {
         localStorage.removeItem("lastActionDate");
       } else {
         localStorage.setItem("lastActionDate", today.toISOString().slice(0, 10));
       }
+
       sendAttendance(name, action, remark, location, currentTime);
     }
-    
+
     function sendAttendance(name, action, remark, location, checkInTime) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
       const formData = new FormData();
@@ -175,13 +175,72 @@
       formData.append("entry.668867521", action);
       formData.append("entry.1234567890", remark);
       formData.append("entry.9876543210", location);
-      formData.append("entry.1234567891", checkInTime);  // Append the actual time
-    
+      formData.append("entry.1234567891", checkInTime);
+
       fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
         .then(() => alert(`✅ ${action} successful for ${name} at ${checkInTime}`))
         .catch(() => alert("❌ Failed to send attendance!"));
     }
-    
+
+    function formatTime(timeString) {
+      if (!timeString) return "";
+      const timeParts = timeString.split(":");
+      if (timeParts.length >= 2) {
+        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
+      }
+      return timeString;
+    }
+
+    function loadHistoryFromSheet() {
+      const name = localStorage.getItem("staffName");
+      if (!name) {
+        alert("❗ Please check in at least once to save your name.");
+        return;
+      }
+      const normName = name.trim().toLowerCase();
+      const month = parseInt(document.getElementById("monthSelect").value);
+      const year = parseInt(document.getElementById("yearSelect").value);
+
+      fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById("historyBody");
+          tbody.innerHTML = "";
+
+          const filtered = data.filter(r => {
+            const recName = (r["Name"] || "").trim().toLowerCase();
+            const recDate = r["Date"];
+            if (!recDate || !recDate.includes("/")) return false;
+            const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
+            return recName === normName && recMonth === month && recYear === year;
+          });
+
+          if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
+            return;
+          }
+
+          filtered.reverse().forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${r["Date"] || ""}</td>
+              <td>${r["Name"] || ""}</td>
+              <td>${formatTime(r["Check-In Time"] || "")}</td>
+              <td>${formatTime(r["Check-Out Time"] || "")}</td>
+              <td>${r["Total Work Hours"] || ""}</td>
+              <td>${r["Work in Minutes"] || ""}</td>
+              <td>${r["Remark"] || ""}</td>
+              <td>${r["Location"] || ""}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(err => {
+          console.error("History load error:", err);
+          alert("❌ Failed to load attendance history.");
+        });
+    }
+
     function loadMonthYearDropdowns() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
@@ -205,81 +264,9 @@
       }
     }
 
-    function formatTime(timeString) {
-        // Ensure the time is in "HH:MM" format
-        const timeParts = timeString.split(":");
-        if (timeParts.length === 2) {
-            const hours = timeParts[0];
-            const minutes = timeParts[1];
-            return `${hours}:${minutes}`;
-        }
-        return timeString;  // Return the original string if it doesn't match "HH:MM"
-    }
-    
-    function loadHistoryFromSheet() {
-        const name = localStorage.getItem("staffName");
-        if (!name) {
-            alert("❗ Please check in at least once to save your name.");
-            return;
-        }
-        const normName = name.trim().toLowerCase();
-        const month = parseInt(document.getElementById("monthSelect").value);
-        const year = parseInt(document.getElementById("yearSelect").value);
-        
-        console.log("Loading history for:", normName, month, year); // Debug log
-        
-        fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
-            .then(res => res.json())
-            .then(data => {
-                console.log("Received data:", data); // Debug log
-        
-                const tbody = document.getElementById("historyBody");
-                tbody.innerHTML = "";
-        
-                const filtered = data.filter(r => {
-                    const recName = (r["Name"] || "").trim().toLowerCase();
-                    const recDate = r["Date"];
-                    if (!recDate || !recDate.includes("/")) return false;
-                    const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
-                    return recName === normName && recMonth === month && recYear === year;
-                });
-        
-                if (filtered.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
-                    return;
-                }
-        
-                filtered.reverse().forEach(r => {
-                    const tr = document.createElement("tr");
-                    
-                    // Format the times
-                    const checkInTime = formatTime(r["Check-In Time"] || "");
-                    const checkOutTime = formatTime(r["Check-Out Time"] || "");
-                    
-                    tr.innerHTML = `
-                        <td>${r["Date"] || ""}</td>
-                        <td>${r["Name"] || ""}</td>
-                        <td>${checkInTime}</td>
-                        <td>${checkOutTime}</td>
-                        <td>${r["Total Work Hours"] || ""}</td>
-                        <td>${r["Work in Minutes"] || ""}</td>
-                        <td>${r["Remark"] || ""}</td>
-                        <td>${r["Location"] || ""}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            })
-            .catch(err => {
-                console.error("History load error:", err);
-                alert("❌ Failed to load attendance history.");
-            });
-    }
-
-  
-    window.addEventListener("DOMContentLoaded", () => {
-      loadMonthYearDropdowns();
-      loadHistoryFromSheet();
-    });
+    // Initial setup
+    loadMonthYearDropdowns();
+    loadHistoryFromSheet();
   </script>
 </body>
 </html>
