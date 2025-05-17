@@ -155,7 +155,8 @@
       staffNameDisplay.textContent = `👤 ${name}`;
 
       const today = new Date();
-      const currentTime = today.toLocaleString();
+      //const currentTime = today.toLocaleString();
+      const currentTime = new Date().toISOString(); // or use a formatted local string if preferred
       const lastAction = localStorage.getItem("lastActionDate");
       const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
 
