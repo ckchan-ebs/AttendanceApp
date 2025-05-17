@@ -193,6 +193,8 @@
       staffNameDisplay.textContent = `👤 ${name}`;
 
       const now = new Date();
+
+      // Format current time in Kuala Lumpur timezone as ISO string without timezone offset
       const currentTime = now.toLocaleString('en-GB', {
         timeZone: 'Asia/Kuala_Lumpur',
         year: 'numeric',
@@ -204,18 +206,26 @@
         hour12: false
       });
 
-      // Get date string YYYY-MM-DD for comparing check-in/out date only
-      const todayDateStr = new Date(now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })).toISOString().slice(0,10);
+      // Get current date string YYYY-MM-DD in Kuala Lumpur timezone for date comparison
+      const todayDateStr = new Date(now.toLocaleString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })).toISOString().slice(0, 10);
 
+      // Retrieve last action type and date from localStorage
+      const lastAction = localStorage.getItem("lastActionType");
       const lastActionDate = localStorage.getItem("lastActionDate");
 
-      // If last action was on same date, this is Check-Out, else Check-In
-      const action = (lastActionDate === todayDateStr) ? "Check-Out" : "Check-In";
-
-      if (action === "Check-In") {
-        localStorage.setItem("lastActionDate", todayDateStr);
-      } else {
+      // Determine if action is Check-In or Check-Out
+      let action;
+      if (lastAction === "Check-In" && lastActionDate === todayDateStr) {
+        // If last action today was Check-In, then now Check-Out
+        action = "Check-Out";
+        // Clear last action as day’s attendance complete
+        localStorage.removeItem("lastActionType");
         localStorage.removeItem("lastActionDate");
+      } else {
+        // Otherwise this is Check-In
+        action = "Check-In";
+        localStorage.setItem("lastActionType", action);
+        localStorage.setItem("lastActionDate", todayDateStr);
       }
 
       sendAttendance(name, action, remark, location, currentTime);
@@ -226,96 +236,114 @@
 
     // Send attendance data to Google Form via POST
     function sendAttendance(name, action, remark, location, time) {
+      // IMPORTANT: Replace entry.xxxxxxxx with your actual Google Form field IDs
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
       const formData = new FormData();
-      formData.append("entry.2140323296", name);
-      formData.append("entry.668867521", action);
-      formData.append("entry.1234567890", remark);
-      formData.append("entry.9876543210", location);
-      formData.append("entry.1234567891", time);
+      formData.append("entry.2140323296", name);     // Name field
+      formData.append("entry.668867521", action);    // Action field (Check-In/Out)
+      formData.append("entry.1111111111", remark);   // Remark field (GPS/No GPS)
+      formData.append("entry.2222222222", location); // Location field (lat,lng or No Location)
+      formData.append("entry.3333333333", time);     // Timestamp field
 
       fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
-        .then(() => alert(`✔️ ${action} recorded at ${time}`))
-        .catch(() => alert("❌ Failed to send attendance"));
-    }
-
-    // Populate month and year dropdowns for history filtering
-    function populateMonthYearSelectors() {
-      const monthSelect = document.getElementById("monthSelect");
-      const yearSelect = document.getElementById("yearSelect");
-
-      // Populate months Jan-Dec
-      const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-
-      monthSelect.innerHTML = "";
-      monthNames.forEach((month, idx) => {
-        const option = document.createElement("option");
-        option.value = idx + 1;
-        option.textContent = month;
-        monthSelect.appendChild(option);
-      });
-
-      // Populate last 5 years including current
-      const currentYear = new Date().getFullYear();
-      yearSelect.innerHTML = "";
-      for(let y = currentYear; y >= currentYear - 5; y--) {
-        const option = document.createElement("option");
-        option.value = y;
-        option.textContent = y;
-        yearSelect.appendChild(option);
-      }
-
-      // Set defaults to current month/year
-      monthSelect.value = new Date().getMonth() + 1;
-      yearSelect.value = currentYear;
-    }
-
-    // Load and display attendance history filtered by selected month/year
-    function loadHistoryFromSheet() {
-      const month = document.getElementById("monthSelect").value;
-      const year = document.getElementById("yearSelect").value;
-
-      const sheetUrl = "https://script.google.com/macros/s/AKfycbyKY2m5VkRWW2O_NHlD3iDzLbq9GOiWeSLYPvIQMrjg5BZHo_qGVtrsKWzFJMsupJg4/exec";
-
-      fetch(sheetUrl)
-        .then(res => res.json())
-        .then(data => {
-          const records = data.records || [];
-          const tbody = document.getElementById("historyBody");
-          tbody.innerHTML = "";
-
-          records.forEach(rec => {
-            const recDate = new Date(rec.Date);
-            if ((recDate.getMonth() + 1).toString() === month && recDate.getFullYear().toString() === year) {
-              const tr = document.createElement("tr");
-
-              tr.innerHTML = `
-                <td>${rec.Date}</td>
-                <td>${rec.Name}</td>
-                <td>${rec["Check-In"] || ""}</td>
-                <td>${rec["Check-Out"] || ""}</td>
-                <td>${rec["TotalHours"] || ""}</td>
-                <td>${rec["Minutes"] || ""}</td>
-                <td>${rec.Remark}</td>
-                <td>${rec.Location}</td>
-              `;
-              tbody.appendChild(tr);
-            }
-          });
+        .then(() => {
+          alert(`${action} successful at ${time}`);
         })
-        .catch(() => {
-          alert("Failed to load attendance history.");
+        .catch((error) => {
+          alert(`Error sending attendance: ${error}`);
         });
     }
 
-    // Initialize selectors and load history on page load
-    window.onload = () => {
-      populateMonthYearSelectors();
-      loadHistoryFromSheet();
-    };
+    // Populate month and year selectors with current month/year selected
+    function populateMonthYearSelectors() {
+      const monthSelect = document.getElementById("monthSelect");
+      const yearSelect = document.getElementById("yearSelect");
+      const now = new Date();
+
+      // Populate months
+      const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      months.forEach((m, i) => {
+        const opt = document.createElement("option");
+        opt.value = i + 1; // months 1-12
+        opt.textContent = m;
+        monthSelect.appendChild(opt);
+      });
+
+      // Populate years (from 2020 to current year + 2)
+      const startYear = 2020;
+      const endYear = now.getFullYear() + 2;
+      for (let y = startYear; y <= endYear; y++) {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+      }
+
+      // Set current month and year selected
+      monthSelect.value = now.getMonth() + 1;
+      yearSelect.value = now.getFullYear();
+    }
+
+    // Load attendance history from Google Sheets JSON endpoint
+    // This URL should point to your published Google Sheet JSON (from your sheet or Apps Script)
+    async function loadHistoryFromSheet() {
+      const month = document.getElementById("monthSelect").value;
+      const year = document.getElementById("yearSelect").value;
+
+      const historyBody = document.getElementById("historyBody");
+      historyBody.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
+
+      // Replace this URL with your published Google Sheet JSON or Google Apps Script web app URL
+      const sheetJsonUrl = "https://script.google.com/macros/s/AKfycbyKY2m5VkRWW2O_NHlD3iDzLbq9GOiWeSLYPvIQMrjg5BZHo_qGVtrsKWzFJMsupJg4/exec";
+
+      try {
+        const response = await fetch(sheetJsonUrl);
+        if (!response.ok) throw new Error("Failed to fetch attendance data");
+
+        const data = await response.json();
+
+        // data assumed to be array of records with keys:
+        // date, name, checkIn, checkOut, totalHours, minutes, remark, location
+
+        // Filter records by selected year and month (date assumed in ISO YYYY-MM-DD)
+        const filtered = data.filter(rec => {
+          if (!rec.date) return false;
+          const [y, m] = rec.date.split("-");
+          return (y == year && m == month.toString().padStart(2, '0'));
+        });
+
+        if (filtered.length === 0) {
+          historyBody.innerHTML = "<tr><td colspan='8'>No records for selected month/year.</td></tr>";
+          return;
+        }
+
+        // Sort records by date ascending
+        filtered.sort((a, b) => a.date.localeCompare(b.date));
+
+        // Build table rows
+        historyBody.innerHTML = filtered.map(rec => `
+          <tr>
+            <td>${rec.date || ""}</td>
+            <td>${rec.name || ""}</td>
+            <td>${rec.checkIn || ""}</td>
+            <td>${rec.checkOut || ""}</td>
+            <td>${rec.totalHours || ""}</td>
+            <td>${rec.minutes || ""}</td>
+            <td>${rec.remark || ""}</td>
+            <td>${rec.location || ""}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        historyBody.innerHTML = `<tr><td colspan='8'>Error loading data: ${err.message}</td></tr>`;
+      }
+    }
+
+    populateMonthYearSelectors();
+    loadHistoryFromSheet();
+
   </script>
 </body>
 </html>
