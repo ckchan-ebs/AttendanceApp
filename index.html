@@ -155,8 +155,19 @@
       staffNameDisplay.textContent = `👤 ${name}`;
 
       const today = new Date();
-      //const currentTime = today.toLocaleString();
-      const currentTime = new Date().toISOString(); // or use a formatted local string if preferred
+
+      // 🟢 FIX: Use readable local time string (24-hour format, Malaysia time zone)
+      const currentTime = today.toLocaleString('en-GB', {
+        timeZone: 'Asia/Kuala_Lumpur',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+
       const lastAction = localStorage.getItem("lastActionDate");
       const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
 
