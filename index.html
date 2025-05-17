@@ -1,15 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Attendance Check-In</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      padding: 20px;
       text-align: center;
+      padding: 20px;
+      background-color: #f4f4f9;
     }
     h2 {
       color: #333;
@@ -99,251 +100,174 @@
         </tr>
       </thead>
       <tbody id="historyBody">
-        <!-- Attendance records will be inserted here -->
+        <!-- Attendance rows will appear here -->
       </tbody>
     </table>
   </div>
 
   <script>
-    // Constants for office location and max allowed distance (meters)
     const officeLat = 3.1925444;
     const officeLng = 101.6110718;
     const maxDistanceMeters = 500;
 
-    // Display date and time updated every second, fixed to Kuala Lumpur timezone
     function updateDateTime() {
       const now = new Date();
-      const optionsDate = { 
-        timeZone: 'Asia/Kuala_Lumpur',
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-      };
-      const optionsTime = { 
-        timeZone: 'Asia/Kuala_Lumpur',
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-      };
-
-      const dateStr = now.toLocaleDateString(undefined, optionsDate);
-      const timeStr = now.toLocaleTimeString(undefined, optionsTime);
-
-      document.getElementById("datetime").innerHTML = `${dateStr} | ${timeStr}`;
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById("datetime").innerHTML = `${now.toLocaleDateString(undefined, options)} | ${now.toLocaleTimeString()}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // Display stored staff name or default message
     const staffNameDisplay = document.getElementById("staffNameDisplay");
     const storedName = localStorage.getItem("staffName");
     staffNameDisplay.textContent = storedName ? `👤 ${storedName}` : '👤 No name saved yet';
 
-    // Calculate distance between two GPS points using Haversine formula
     function distanceBetween(lat1, lon1, lat2, lon2) {
-      const R = 6371e3; // Earth radius in meters
+      const R = 6371e3;
       const toRad = deg => deg * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    // Geolocation check and proceed based on distance from office
     function checkLocation() {
-      if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser.");
-        proceedCheck("No GPS", "No Location");
-        return;
-      }
-
       navigator.geolocation.getCurrentPosition(pos => {
         const { latitude, longitude } = pos.coords;
         const distance = distanceBetween(latitude, longitude, officeLat, officeLng);
         if (distance <= maxDistanceMeters) {
-          proceedCheck("Used GPS", `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          proceedCheck("Used GPS", `${latitude}, ${longitude}`);
         } else {
           if (confirm("❌ You are not in office area!\n\nProceed anyway?")) {
             proceedCheck("No GPS", "No Location");
           }
         }
-      }, err => {
-        if (err.code === 1) { // permission denied
-          alert("Permission denied for location access.");
-        }
+      }, () => {
         if (confirm("❌ Cannot get location. Proceed anyway?")) {
           proceedCheck("No GPS", "No Location");
         }
-      }, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
       });
     }
 
-    // Handle Check-In or Check-Out logic
     function proceedCheck(remark, location) {
-      let name = localStorage.getItem("staffName") || "";
-      if (!name.trim()) {
-        name = prompt("Enter your name:");
-        if (!name) return;  // Cancel if empty
-        name = name.trim();
-        if (!name) return;  // Cancel if empty after trim
-        localStorage.setItem("staffName", name);
-      }
+      let name = localStorage.getItem("staffName") || prompt("Enter your name:");
+      if (!name) return;
+      localStorage.setItem("staffName", name);
       staffNameDisplay.textContent = `👤 ${name}`;
 
-      const now = new Date();
+      const today = new Date();
+      const currentTime = today.toLocaleString();
+      const lastAction = localStorage.getItem("lastActionDate");
+      const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
 
-      // Format current time in Kuala Lumpur timezone as ISO string without timezone offset
-      const currentTime = now.toLocaleString('en-GB', {
-        timeZone: 'Asia/Kuala_Lumpur',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-
-      // Get current date string YYYY-MM-DD in Kuala Lumpur timezone for date comparison
-      const todayDateStr = new Date(now.toLocaleString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })).toISOString().slice(0, 10);
-
-      // Retrieve last action type and date from localStorage
-      const lastAction = localStorage.getItem("lastActionType");
-      const lastActionDate = localStorage.getItem("lastActionDate");
-
-      // Determine if action is Check-In or Check-Out
-      let action;
-      if (lastAction === "Check-In" && lastActionDate === todayDateStr) {
-        // If last action today was Check-In, then now Check-Out
-        action = "Check-Out";
-        // Clear last action as day’s attendance complete
-        localStorage.removeItem("lastActionType");
+      if (action === "Check-Out") {
         localStorage.removeItem("lastActionDate");
       } else {
-        // Otherwise this is Check-In
-        action = "Check-In";
-        localStorage.setItem("lastActionType", action);
-        localStorage.setItem("lastActionDate", todayDateStr);
+        localStorage.setItem("lastActionDate", today.toISOString().slice(0, 10));
       }
 
       sendAttendance(name, action, remark, location, currentTime);
-
-      // Reload attendance history shortly after sending
-      setTimeout(loadHistoryFromSheet, 1000);
     }
 
-    // Send attendance data to Google Form via POST
-    function sendAttendance(name, action, remark, location, time) {
-      // IMPORTANT: Replace entry.xxxxxxxx with your actual Google Form field IDs
+    function sendAttendance(name, action, remark, location, checkInTime) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
       const formData = new FormData();
-      formData.append("entry.2140323296", name);     // Name field
-      formData.append("entry.668867521", action);    // Action field (Check-In/Out)
-      formData.append("entry.1111111111", remark);   // Remark field (GPS/No GPS)
-      formData.append("entry.2222222222", location); // Location field (lat,lng or No Location)
-      formData.append("entry.3333333333", time);     // Timestamp field
+      formData.append("entry.2140323296", name);
+      formData.append("entry.668867521", action);
+      formData.append("entry.1234567890", remark);
+      formData.append("entry.9876543210", location);
+      formData.append("entry.1234567891", checkInTime);
 
       fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
-        .then(() => {
-          alert(`${action} successful at ${time}`);
+        .then(() => alert(`✅ ${action} successful for ${name} at ${checkInTime}`))
+        .catch(() => alert("❌ Failed to send attendance!"));
+    }
+
+    function formatTime(timeString) {
+      if (!timeString) return "";
+      const timeParts = timeString.split(":");
+      if (timeParts.length >= 2) {
+        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
+      }
+      return timeString;
+    }
+
+    function loadHistoryFromSheet() {
+      const name = localStorage.getItem("staffName");
+      if (!name) {
+        alert("❗ Please check in at least once to save your name.");
+        return;
+      }
+      const normName = name.trim().toLowerCase();
+      const month = parseInt(document.getElementById("monthSelect").value);
+      const year = parseInt(document.getElementById("yearSelect").value);
+
+      fetch('https://script.google.com/macros/s/AKfycbyKY2m5VkRWW2O_NHlD3iDzLbq9GOiWeSLYPvIQMrjg5BZHo_qGVtrsKWzFJMsupJg4/exec')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById("historyBody");
+          tbody.innerHTML = "";
+
+          const filtered = data.filter(r => {
+            const recName = (r["Name"] || "").trim().toLowerCase();
+            const recDate = r["Date"];
+            if (!recDate || !recDate.includes("/")) return false;
+            const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
+            return recName === normName && recMonth === month && recYear === year;
+          });
+
+          if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
+            return;
+          }
+
+          filtered.reverse().forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${r["Date"] || ""}</td>
+              <td>${r["Name"] || ""}</td>
+              <td>${formatTime(r["Check-In Time"] || "")}</td>
+              <td>${formatTime(r["Check-Out Time"] || "")}</td>
+              <td>${r["Total Work Hours"] || ""}</td>
+              <td>${r["Work in Minutes"] || ""}</td>
+              <td>${r["Remark"] || ""}</td>
+              <td>${r["Location"] || ""}</td>
+            `;
+            tbody.appendChild(tr);
+          });
         })
-        .catch((error) => {
-          alert(`Error sending attendance: ${error}`);
+        .catch(err => {
+          console.error("History load error:", err);
+          alert("❌ Failed to load attendance history.");
         });
     }
 
-    // Populate month and year selectors with current month/year selected
-    function populateMonthYearSelectors() {
+    function loadMonthYearDropdowns() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
       const now = new Date();
 
-      // Populate months
-      const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-      months.forEach((m, i) => {
+      for (let m = 0; m < 12; m++) {
         const opt = document.createElement("option");
-        opt.value = i + 1; // months 1-12
-        opt.textContent = m;
+        opt.value = m + 1;
+        opt.text = new Date(0, m).toLocaleString('default', { month: 'long' });
+        if (m === now.getMonth()) opt.selected = true;
         monthSelect.appendChild(opt);
-      });
+      }
 
-      // Populate years (from 2020 to current year + 2)
-      const startYear = 2020;
-      const endYear = now.getFullYear() + 2;
-      for (let y = startYear; y <= endYear; y++) {
+      const currentYear = now.getFullYear();
+      for (let y = currentYear; y >= currentYear - 5; y--) {
         const opt = document.createElement("option");
         opt.value = y;
-        opt.textContent = y;
+        opt.text = y;
+        if (y === currentYear) opt.selected = true;
         yearSelect.appendChild(opt);
       }
-
-      // Set current month and year selected
-      monthSelect.value = now.getMonth() + 1;
-      yearSelect.value = now.getFullYear();
     }
 
-    // Load attendance history from Google Sheets JSON endpoint
-    // This URL should point to your published Google Sheet JSON (from your sheet or Apps Script)
-    async function loadHistoryFromSheet() {
-      const month = document.getElementById("monthSelect").value;
-      const year = document.getElementById("yearSelect").value;
-
-      const historyBody = document.getElementById("historyBody");
-      historyBody.innerHTML = "<tr><td colspan='8'>Loading...</td></tr>";
-
-      // Replace this URL with your published Google Sheet JSON or Google Apps Script web app URL
-      const sheetJsonUrl = "https://script.google.com/macros/s/AKfycbyKY2m5VkRWW2O_NHlD3iDzLbq9GOiWeSLYPvIQMrjg5BZHo_qGVtrsKWzFJMsupJg4/exec";
-
-      try {
-        const response = await fetch(sheetJsonUrl);
-        if (!response.ok) throw new Error("Failed to fetch attendance data");
-
-        const data = await response.json();
-
-        // data assumed to be array of records with keys:
-        // date, name, checkIn, checkOut, totalHours, minutes, remark, location
-
-        // Filter records by selected year and month (date assumed in ISO YYYY-MM-DD)
-        const filtered = data.filter(rec => {
-          if (!rec.date) return false;
-          const [y, m] = rec.date.split("-");
-          return (y == year && m == month.toString().padStart(2, '0'));
-        });
-
-        if (filtered.length === 0) {
-          historyBody.innerHTML = "<tr><td colspan='8'>No records for selected month/year.</td></tr>";
-          return;
-        }
-
-        // Sort records by date ascending
-        filtered.sort((a, b) => a.date.localeCompare(b.date));
-
-        // Build table rows
-        historyBody.innerHTML = filtered.map(rec => `
-          <tr>
-            <td>${rec.date || ""}</td>
-            <td>${rec.name || ""}</td>
-            <td>${rec.checkIn || ""}</td>
-            <td>${rec.checkOut || ""}</td>
-            <td>${rec.totalHours || ""}</td>
-            <td>${rec.minutes || ""}</td>
-            <td>${rec.remark || ""}</td>
-            <td>${rec.location || ""}</td>
-          </tr>
-        `).join("");
-      } catch (err) {
-        historyBody.innerHTML = `<tr><td colspan='8'>Error loading data: ${err.message}</td></tr>`;
-      }
-    }
-
-    populateMonthYearSelectors();
+    // Initial setup
+    loadMonthYearDropdowns();
     loadHistoryFromSheet();
-
   </script>
 </body>
 </html>
