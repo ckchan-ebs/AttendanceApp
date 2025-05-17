@@ -183,15 +183,22 @@
         hour12: false
       });
 
+      // FIX: Compare dates correctly by slicing YYYY-MM-DD only from local timezone date string
+      const todayDateStr = new Date(today.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' })).toISOString().slice(0,10);
+
       const lastAction = localStorage.getItem("lastActionDate");
-      const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
+      const action = (lastAction === todayDateStr) ? "Check-Out" : "Check-In";
+
       if (action === "Check-In") {
-        localStorage.setItem("lastActionDate", today.toISOString().slice(0, 10));
+        localStorage.setItem("lastActionDate", todayDateStr);
       } else {
         localStorage.removeItem("lastActionDate");
       }
 
       sendAttendance(name, action, remark, location, currentTime);
+
+      // Refresh history after action
+      setTimeout(loadHistoryFromSheet, 1000);
     }
 
     // Send to Google Form
@@ -251,68 +258,71 @@
             if (!summary[date]) summary[date] = { CheckIn: "", CheckOut: "", TotalH: 0, TotalM: 0, Remark: "", Location: "" };
             if (r.Action === "Check-In" && !summary[date].CheckIn) summary[date].CheckIn = r.Time;
             if (r.Action === "Check-Out" && !summary[date].CheckOut) summary[date].CheckOut = r.Time;
-            summary[date].Remark = r.Remark || summary[date].Remark;
-            summary[date].Location = r.Location || summary[date].Location;
+            summary[date].Remark = r.Remark;
+            summary[date].Location = r.Location;
+          });
 
-            // Calculate total time if both check-in/out present
-            if (summary[date].CheckIn && summary[date].CheckOut) {
-              const tIn = new Date(`${date} ${summary[date].CheckIn}`);
-              const tOut = new Date(`${date} ${summary[date].CheckOut}`);
-              const diffMs = tOut - tIn;
-              if (diffMs > 0) {
-                const diffMins = Math.floor(diffMs / 60000);
-                summary[date].TotalH = Math.floor(diffMins / 60);
-                summary[date].TotalM = diffMins % 60;
-              }
+          for (const date in summary) {
+            let row = summary[date];
+            let totalHours = 0, totalMinutes = 0;
+
+            if (row.CheckIn && row.CheckOut) {
+              const ci = new Date(`1970-01-01T${row.CheckIn}:00`);
+              const co = new Date(`1970-01-01T${row.CheckOut}:00`);
+              let diff = (co - ci) / 60000;
+              if (diff < 0) diff += 24 * 60; // handle overnight
+              totalHours = Math.floor(diff / 60);
+              totalMinutes = diff % 60;
             }
-          });
 
-          Object.entries(summary).forEach(([date, val]) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td>${date}</td>
-              <td>${name}</td>
-              <td>${val.CheckIn}</td>
-              <td>${val.CheckOut}</td>
-              <td>${val.TotalH}</td>
-              <td>${val.TotalM}</td>
-              <td>${val.Remark}</td>
-              <td>${val.Location}</td>
+            tbody.innerHTML += `
+              <tr>
+                <td>${date}</td>
+                <td>${name}</td>
+                <td>${row.CheckIn || ""}</td>
+                <td>${row.CheckOut || ""}</td>
+                <td>${totalHours}</td>
+                <td>${totalMinutes}</td>
+                <td>${row.Remark || ""}</td>
+                <td>${row.Location || ""}</td>
+              </tr>
             `;
-            tbody.appendChild(row);
-          });
+          }
         })
         .catch(() => alert("Failed to load attendance history."));
     }
 
-    // Populate month and year dropdowns
-    function populateMonthYear() {
+    // Populate Month and Year Selects
+    function populateDateSelectors() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
-
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
 
-      for (let m = 1; m <= 12; m++) {
+      // Months 1-12
+      for (let i = 1; i <= 12; i++) {
         const option = document.createElement("option");
-        option.value = m;
-        option.text = m.toString().padStart(2, '0');
+        option.value = i;
+        option.textContent = new Date(0, i - 1).toLocaleString('default', { month: 'long' });
         monthSelect.appendChild(option);
       }
-      monthSelect.value = currentMonth;
 
-      for (let y = currentYear - 5; y <= currentYear + 1; y++) {
+      // Years: from 2023 to current year + 1
+      const startYear = 2023;
+      const currentYear = now.getFullYear();
+      for (let y = startYear; y <= currentYear + 1; y++) {
         const option = document.createElement("option");
         option.value = y;
-        option.text = y.toString();
+        option.textContent = y;
         yearSelect.appendChild(option);
       }
+
+      monthSelect.value = now.getMonth() + 1;
       yearSelect.value = currentYear;
     }
 
-    populateMonthYear();
+    populateDateSelectors();
     loadHistoryFromSheet();
+
   </script>
 </body>
 </html>
