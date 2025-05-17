@@ -110,12 +110,22 @@
     const officeLng = 101.6110718;
     const maxDistanceMeters = 500;
 
-    // Date and Time Display
+    // Date and Time Display (fixed to Asia/Kuala_Lumpur timezone)
     function updateDateTime() {
       const now = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById("datetime").innerHTML =
-        `${now.toLocaleDateString(undefined, options)} | ${now.toLocaleTimeString()}`;
+      const optionsDate = { 
+        timeZone: 'Asia/Kuala_Lumpur',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      };
+      const optionsTime = { 
+        timeZone: 'Asia/Kuala_Lumpur',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      };
+
+      const dateStr = now.toLocaleDateString(undefined, optionsDate);
+      const timeStr = now.toLocaleTimeString(undefined, optionsTime);
+
+      document.getElementById("datetime").innerHTML = `${dateStr} | ${timeStr}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
@@ -228,63 +238,81 @@
             const recName = (r["Name"] || "").trim().toLowerCase();
             const recDate = r["Date"];
             if (!recDate || !recDate.includes("/")) return false;
-            const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
-            return recName === normName && recMonth === month && recYear === year;
+            const [d, m, y] = recDate.split("/").map(x => parseInt(x));
+            if (recName !== normName) return false;
+            if (m !== month || y !== year) return false;
+            return true;
           });
 
-          if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
-            return;
-          }
+          // Aggregate by date
+          const summary = {};
+          filtered.forEach(r => {
+            const date = r.Date;
+            if (!summary[date]) summary[date] = { CheckIn: "", CheckOut: "", TotalH: 0, TotalM: 0, Remark: "", Location: "" };
+            if (r.Action === "Check-In" && !summary[date].CheckIn) summary[date].CheckIn = r.Time;
+            if (r.Action === "Check-Out" && !summary[date].CheckOut) summary[date].CheckOut = r.Time;
+            summary[date].Remark = r.Remark || summary[date].Remark;
+            summary[date].Location = r.Location || summary[date].Location;
 
-          filtered.reverse().forEach(r => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${r["Date"] || ""}</td>
-              <td>${r["Name"] || ""}</td>
-              <td>${formatTime(r["Check-In Time"] || "")}</td>
-              <td>${formatTime(r["Check-Out Time"] || "")}</td>
-              <td>${r["Total Work Hours"] || ""}</td>
-              <td>${r["Work in Minutes"] || ""}</td>
-              <td>${r["Remark"] || ""}</td>
-              <td>${r["Location"] || ""}</td>
+            // Calculate total time if both check-in/out present
+            if (summary[date].CheckIn && summary[date].CheckOut) {
+              const tIn = new Date(`${date} ${summary[date].CheckIn}`);
+              const tOut = new Date(`${date} ${summary[date].CheckOut}`);
+              const diffMs = tOut - tIn;
+              if (diffMs > 0) {
+                const diffMins = Math.floor(diffMs / 60000);
+                summary[date].TotalH = Math.floor(diffMins / 60);
+                summary[date].TotalM = diffMins % 60;
+              }
+            }
+          });
+
+          Object.entries(summary).forEach(([date, val]) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${date}</td>
+              <td>${name}</td>
+              <td>${val.CheckIn}</td>
+              <td>${val.CheckOut}</td>
+              <td>${val.TotalH}</td>
+              <td>${val.TotalM}</td>
+              <td>${val.Remark}</td>
+              <td>${val.Location}</td>
             `;
-            tbody.appendChild(tr);
+            tbody.appendChild(row);
           });
         })
-        .catch(err => {
-          console.error("History load error:", err);
-          alert("❌ Failed to load attendance history.");
-        });
+        .catch(() => alert("Failed to load attendance history."));
     }
 
-    // Populate Month & Year dropdowns
+    // Populate month and year dropdowns
     function populateMonthYear() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
 
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
       for (let m = 1; m <= 12; m++) {
-        const opt = document.createElement("option");
-        opt.value = m;
-        opt.textContent = m;
-        monthSelect.appendChild(opt);
+        const option = document.createElement("option");
+        option.value = m;
+        option.text = m.toString().padStart(2, '0');
+        monthSelect.appendChild(option);
       }
+      monthSelect.value = currentMonth;
 
-      const currentYear = new Date().getFullYear();
-      for (let y = currentYear; y >= currentYear - 5; y--) {
-        const opt = document.createElement("option");
-        opt.value = y;
-        opt.textContent = y;
-        yearSelect.appendChild(opt);
+      for (let y = currentYear - 5; y <= currentYear + 1; y++) {
+        const option = document.createElement("option");
+        option.value = y;
+        option.text = y.toString();
+        yearSelect.appendChild(option);
       }
-
-      monthSelect.value = new Date().getMonth() + 1;
       yearSelect.value = currentYear;
-      loadHistoryFromSheet();
     }
 
-    // Init
     populateMonthYear();
+    loadHistoryFromSheet();
   </script>
 </body>
 </html>
