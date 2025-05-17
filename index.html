@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Attendance Check-In</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
       background-color: #f4f4f9;
+      padding: 20px;
+      text-align: center;
     }
     h2 {
       color: #333;
@@ -99,28 +99,33 @@
         </tr>
       </thead>
       <tbody id="historyBody">
-        <!-- Attendance rows will appear here -->
+        <!-- Attendance records will be inserted here -->
       </tbody>
     </table>
   </div>
 
   <script>
+    // Constants
     const officeLat = 3.1925444;
     const officeLng = 101.6110718;
     const maxDistanceMeters = 500;
 
+    // Date and Time Display
     function updateDateTime() {
       const now = new Date();
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById("datetime").innerHTML = `${now.toLocaleDateString(undefined, options)} | ${now.toLocaleTimeString()}`;
+      document.getElementById("datetime").innerHTML =
+        `${now.toLocaleDateString(undefined, options)} | ${now.toLocaleTimeString()}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
+    // Staff Name
     const staffNameDisplay = document.getElementById("staffNameDisplay");
     const storedName = localStorage.getItem("staffName");
     staffNameDisplay.textContent = storedName ? `👤 ${storedName}` : '👤 No name saved yet';
 
+    // GPS Distance Calculation
     function distanceBetween(lat1, lon1, lat2, lon2) {
       const R = 6371e3;
       const toRad = deg => deg * Math.PI / 180;
@@ -130,6 +135,7 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    // Location Check
     function checkLocation() {
       navigator.geolocation.getCurrentPosition(pos => {
         const { latitude, longitude } = pos.coords;
@@ -148,6 +154,7 @@
       });
     }
 
+    // Check In or Out
     function proceedCheck(remark, location) {
       let name = localStorage.getItem("staffName") || prompt("Enter your name:");
       if (!name) return;
@@ -155,8 +162,6 @@
       staffNameDisplay.textContent = `👤 ${name}`;
 
       const today = new Date();
-
-      // 🟢 FIX: Use readable local time string (24-hour format, Malaysia time zone)
       const currentTime = today.toLocaleString('en-GB', {
         timeZone: 'Asia/Kuala_Lumpur',
         year: 'numeric',
@@ -170,16 +175,16 @@
 
       const lastAction = localStorage.getItem("lastActionDate");
       const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
-
-      if (action === "Check-Out") {
-        localStorage.removeItem("lastActionDate");
-      } else {
+      if (action === "Check-In") {
         localStorage.setItem("lastActionDate", today.toISOString().slice(0, 10));
+      } else {
+        localStorage.removeItem("lastActionDate");
       }
 
       sendAttendance(name, action, remark, location, currentTime);
     }
 
+    // Send to Google Form
     function sendAttendance(name, action, remark, location, checkInTime) {
       const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
       const formData = new FormData();
@@ -194,21 +199,21 @@
         .catch(() => alert("❌ Failed to send attendance!"));
     }
 
+    // Format HH:MM
     function formatTime(timeString) {
       if (!timeString) return "";
-      const timeParts = timeString.split(":");
-      if (timeParts.length >= 2) {
-        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
-      }
-      return timeString;
+      const [hour, minute] = timeString.split(":");
+      return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
     }
 
+    // Load Attendance History
     function loadHistoryFromSheet() {
       const name = localStorage.getItem("staffName");
       if (!name) {
         alert("❗ Please check in at least once to save your name.");
         return;
       }
+
       const normName = name.trim().toLowerCase();
       const month = parseInt(document.getElementById("monthSelect").value);
       const year = parseInt(document.getElementById("yearSelect").value);
@@ -253,35 +258,33 @@
         });
     }
 
-        function loadMonthYearDropdowns() {
+    // Populate Month & Year dropdowns
+    function populateMonthYear() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
-      const now = new Date();
-      const currentMonth = now.getMonth(); // 0-indexed
-      const currentYear = now.getFullYear();
 
-      // Populate months (January to December)
-      for (let m = 0; m < 12; m++) {
+      for (let m = 1; m <= 12; m++) {
         const opt = document.createElement("option");
-        opt.value = m + 1; // 1-indexed for compatibility
-        opt.text = new Date(0, m).toLocaleString('default', { month: 'long' });
-        if (m === currentMonth) opt.selected = true;
+        opt.value = m;
+        opt.textContent = m;
         monthSelect.appendChild(opt);
       }
 
-      // Populate years (e.g., from currentYear - 2 to currentYear + 1)
-      for (let y = currentYear - 2; y <= currentYear + 1; y++) {
+      const currentYear = new Date().getFullYear();
+      for (let y = currentYear; y >= currentYear - 5; y--) {
         const opt = document.createElement("option");
         opt.value = y;
-        opt.text = y;
-        if (y === currentYear) opt.selected = true;
+        opt.textContent = y;
         yearSelect.appendChild(opt);
       }
+
+      monthSelect.value = new Date().getMonth() + 1;
+      yearSelect.value = currentYear;
+      loadHistoryFromSheet();
     }
 
-    // Initial setup
-    loadMonthYearDropdowns();
-    loadHistoryFromSheet();
+    // Init
+    populateMonthYear();
   </script>
 </body>
 </html>
