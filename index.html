@@ -184,8 +184,10 @@
     function proceedCheck(remark, location) {
       let name = localStorage.getItem("staffName") || "";
       if (!name.trim()) {
-        name = prompt("Enter your name:").trim();
+        name = prompt("Enter your name:");
         if (!name) return;  // Cancel if empty
+        name = name.trim();
+        if (!name) return;  // Cancel if empty after trim
         localStorage.setItem("staffName", name);
       }
       staffNameDisplay.textContent = `👤 ${name}`;
@@ -233,137 +235,87 @@
       formData.append("entry.1234567891", time);
 
       fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
-        .then(() => alert(`✅ ${action} successful for ${name} at ${time}`))
-        .catch(() => alert("❌ Failed to send attendance!"));
+        .then(() => alert(`✔️ ${action} recorded at ${time}`))
+        .catch(() => alert("❌ Failed to send attendance"));
     }
 
-    // Load attendance history from Google Apps Script JSON endpoint
-    function loadHistoryFromSheet() {
-      const name = localStorage.getItem("staffName");
-      if (!name) {
-        alert("❗ Please check in at least once to save your name.");
-        return;
-      }
-
-      const normName = name.trim().toLowerCase();
-
-      const monthSelect = document.getElementById("monthSelect");
-      const yearSelect = document.getElementById("yearSelect");
-      const tbody = document.getElementById("historyBody");
-
-      const selectedMonth = parseInt(monthSelect.value);
-      const selectedYear = parseInt(yearSelect.value);
-
-      const url = `https://script.google.com/macros/s/AKfycbxBjTno627hPi6F60Uzma_ba6DGxnYc6NEqGCjrr10IBr9-LxhhR_qimF8ay4CPEsRc/exec`;
-
-      fetch(url)
-        .then(resp => resp.json())
-        .then(data => {
-          const records = data.records || [];
-          // Filter records by selected month, year and name
-          const filtered = records.filter(r => {
-            const dateStr = r.Date; // expect format like '2023-05-12'
-            if (!dateStr) return false;
-
-            const recordDate = new Date(dateStr);
-            if (recordDate.getMonth() + 1 !== selectedMonth) return false;
-            if (recordDate.getFullYear() !== selectedYear) return false;
-
-            if (!r.Name) return false;
-            return r.Name.trim().toLowerCase() === normName;
-          });
-
-          // Group by date and calculate Check-In, Check-Out and total hours
-          const grouped = {};
-          filtered.forEach(r => {
-            const d = r.Date;
-            if (!grouped[d]) grouped[d] = [];
-            grouped[d].push(r);
-          });
-
-          tbody.innerHTML = "";
-          Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a)).forEach(date => {
-            const dayRecords = grouped[date];
-            const checkInRec = dayRecords.find(r => r.Action.toLowerCase() === "check-in");
-            const checkOutRec = dayRecords.find(r => r.Action.toLowerCase() === "check-out");
-
-            const checkInTime = checkInRec ? checkInRec.Time : "";
-            const checkOutTime = checkOutRec ? checkOutRec.Time : "";
-
-            // Calculate total hours & minutes between check-in and check-out
-            let totalHours = "", totalMinutes = "";
-            if (checkInTime && checkOutTime) {
-              const hmsToDate = (timeStr) => {
-                const [h,m,s] = timeStr.split(":").map(Number);
-                const d = new Date(0,0,0,h,m,s);
-                return d;
-              };
-              const ciDate = hmsToDate(checkInTime);
-              const coDate = hmsToDate(checkOutTime);
-              let diffMs = coDate - ciDate;
-              if(diffMs < 0) diffMs = 0; // no negative time
-              const diffMinutes = Math.floor(diffMs / 60000);
-              totalHours = Math.floor(diffMinutes / 60);
-              totalMinutes = diffMinutes % 60;
-            }
-
-            // Remark and location (from Check-In record preferred)
-            const remark = checkInRec ? checkInRec.Remark : "";
-            const location = checkInRec ? checkInRec.Location : "";
-
-            const row = `<tr>
-              <td>${date}</td>
-              <td>${name}</td>
-              <td>${checkInTime}</td>
-              <td>${checkOutTime}</td>
-              <td>${totalHours}</td>
-              <td>${totalMinutes}</td>
-              <td>${remark}</td>
-              <td>${location}</td>
-            </tr>`;
-
-            tbody.insertAdjacentHTML("beforeend", row);
-          });
-
-          if (tbody.children.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8">No records found for ${monthSelect.options[monthSelect.selectedIndex].text} ${selectedYear}</td></tr>`;
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          tbody.innerHTML = `<tr><td colspan="8">Error loading records.</td></tr>`;
-        });
-    }
-
-    // Populate month and year dropdowns
+    // Populate month and year dropdowns for history filtering
     function populateMonthYearSelectors() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
-      const now = new Date();
 
-      // Month options (1 to 12)
-      for(let m=1; m<=12; m++) {
+      // Populate months Jan-Dec
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      monthSelect.innerHTML = "";
+      monthNames.forEach((month, idx) => {
         const option = document.createElement("option");
-        option.value = m;
-        option.text = new Date(0, m-1).toLocaleString('en', { month: 'long' });
-        if (m === now.getMonth() + 1) option.selected = true;
+        option.value = idx + 1;
+        option.textContent = month;
         monthSelect.appendChild(option);
-      }
+      });
 
-      // Year options (5 years back and forward)
-      const currentYear = now.getFullYear();
-      for(let y=currentYear-5; y<=currentYear+5; y++) {
+      // Populate last 5 years including current
+      const currentYear = new Date().getFullYear();
+      yearSelect.innerHTML = "";
+      for(let y = currentYear; y >= currentYear - 5; y--) {
         const option = document.createElement("option");
         option.value = y;
-        option.text = y;
-        if (y === currentYear) option.selected = true;
+        option.textContent = y;
         yearSelect.appendChild(option);
       }
+
+      // Set defaults to current month/year
+      monthSelect.value = new Date().getMonth() + 1;
+      yearSelect.value = currentYear;
     }
 
-    populateMonthYearSelectors();
-    loadHistoryFromSheet();
+    // Load and display attendance history filtered by selected month/year
+    function loadHistoryFromSheet() {
+      const month = document.getElementById("monthSelect").value;
+      const year = document.getElementById("yearSelect").value;
 
+      const sheetUrl = "https://script.google.com/macros/s/AKfycbwLI7cFwt0wq1nbvuwDdy8mUE3iDWxJmBChReHEq0Qiz6xLyly-mODpyIjOs1Y1oBf-/exec";
+
+      fetch(sheetUrl)
+        .then(res => res.json())
+        .then(data => {
+          const records = data.records || [];
+          const tbody = document.getElementById("historyBody");
+          tbody.innerHTML = "";
+
+          records.forEach(rec => {
+            const recDate = new Date(rec.Date);
+            if ((recDate.getMonth() + 1).toString() === month && recDate.getFullYear().toString() === year) {
+              const tr = document.createElement("tr");
+
+              tr.innerHTML = `
+                <td>${rec.Date}</td>
+                <td>${rec.Name}</td>
+                <td>${rec["Check-In"] || ""}</td>
+                <td>${rec["Check-Out"] || ""}</td>
+                <td>${rec["TotalHours"] || ""}</td>
+                <td>${rec["Minutes"] || ""}</td>
+                <td>${rec.Remark}</td>
+                <td>${rec.Location}</td>
+              `;
+              tbody.appendChild(tr);
+            }
+          });
+        })
+        .catch(() => {
+          alert("Failed to load attendance history.");
+        });
+    }
+
+    // Initialize selectors and load history on page load
+    window.onload = () => {
+      populateMonthYearSelectors();
+      loadHistoryFromSheet();
+    };
   </script>
 </body>
 </html>
