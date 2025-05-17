@@ -253,21 +253,24 @@
         });
     }
 
-    function loadMonthYearDropdowns() {
+        function loadMonthYearDropdowns() {
       const monthSelect = document.getElementById("monthSelect");
       const yearSelect = document.getElementById("yearSelect");
       const now = new Date();
+      const currentMonth = now.getMonth(); // 0-indexed
+      const currentYear = now.getFullYear();
 
+      // Populate months (January to December)
       for (let m = 0; m < 12; m++) {
         const opt = document.createElement("option");
-        opt.value = m + 1;
+        opt.value = m + 1; // 1-indexed for compatibility
         opt.text = new Date(0, m).toLocaleString('default', { month: 'long' });
-        if (m === now.getMonth()) opt.selected = true;
+        if (m === currentMonth) opt.selected = true;
         monthSelect.appendChild(opt);
       }
 
-      const currentYear = now.getFullYear();
-      for (let y = currentYear; y >= currentYear - 5; y--) {
+      // Populate years (e.g., from currentYear - 2 to currentYear + 1)
+      for (let y = currentYear - 2; y <= currentYear + 1; y++) {
         const opt = document.createElement("option");
         opt.value = y;
         opt.text = y;
@@ -277,8 +280,8 @@
     }
 
     // Initial setup
-    loadMonthYearDropdowns();
     loadHistoryFromSheet();
+    loadMonthYearDropdowns();
   </script>
 </body>
 </html>
