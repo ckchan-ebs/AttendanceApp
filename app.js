@@ -108,43 +108,51 @@ function formatDateTime(dtString) {
   return dt.toLocaleString(); // local timezone
 }
 
-// --- Load history ---
+// --- Helper: parse DD/MM/YYYY HH:MM:SS to JS Date ---
+function parseDDMMYYYY(dateString) {
+  if (!dateString) return null;
+  const [datePart, timePart] = dateString.split(" ");
+  const [day, month, year] = datePart.split("/").map(Number);
+  let hours = 0, minutes = 0, seconds = 0;
+  if (timePart) {
+    [hours, minutes, seconds] = timePart.split(":").map(Number);
+  }
+  return new Date(year, month - 1, day, hours, minutes, seconds);
+}
+
+// --- Format datetime to local string ---
+function formatDateTime(dtString) {
+  if (!dtString) return "";
+  const dt = parseDDMMYYYY(dtString) || new Date(dtString);
+  return dt.toLocaleString(); // Local timezone
+}
+
+// --- Load attendance history ---
 function loadHistoryFromSheet() {
   const name = localStorage.getItem("staffName")?.trim();
-  if (!name) { alert("❗ Please check in at least once to save your name."); return; }
+  if (!name) { 
+    alert("❗ Please check in at least once to save your name."); 
+    return; 
+  }
   const normName = name.toLowerCase();
-
   const month = parseInt(document.getElementById("monthSelect").value, 10);
   const year = parseInt(document.getElementById("yearSelect").value, 10);
 
-  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec') // Replace with your deployed Apps Script Web App URL
+  fetch('YOUR_WEB_APP_URL') // Replace with your deployed Apps Script Web App URL
     .then(res => res.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
       tbody.innerHTML = "";
 
+      // Filter records by staff name and selected month/year
       const filtered = data.filter(record => {
         const recName = (record["Name"] || "").trim().toLowerCase();
         if (recName !== normName) return false;
 
-        let dateString = record["Date"] || record["Check-In Time"] || "";
-        if (!dateString) return false;
+        const dateObj = parseDDMMYYYY(record["Date"] || record["Check-In Time"]);
+        if (!dateObj) return false;
 
-        let dateObj;
-        if (dateString.includes("/")) {
-          const parts = dateString.split(" ");
-          const [d, m, y] = parts[0].split("/").map(Number);
-          if (parts[1]) {
-            const [h, min, s] = parts[1].split(":").map(Number);
-            dateObj = new Date(y, m-1, d, h, min, s);
-          } else {
-            dateObj = new Date(y, m-1, d);
-          }
-        } else {
-          dateObj = new Date(dateString);
-        }
-
-        return (dateObj.getMonth()+1) === month && dateObj.getFullYear() === year;
+        return (dateObj.getMonth() + 1) === month && dateObj.getFullYear() === year;
       });
 
       if (!filtered.length) {
@@ -152,6 +160,7 @@ function loadHistoryFromSheet() {
         return;
       }
 
+      // Display records in reverse order (latest first)
       filtered.reverse().forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -167,7 +176,10 @@ function loadHistoryFromSheet() {
         tbody.appendChild(tr);
       });
     })
-    .catch(err => { console.error(err); alert("❌ Failed to load attendance history."); });
+    .catch(err => { 
+      console.error(err); 
+      alert("❌ Failed to load attendance history."); 
+    });
 }
 
 // --- Populate month/year dropdowns ---
@@ -198,3 +210,4 @@ window.addEventListener("DOMContentLoaded", () => {
   loadMonthYearDropdowns();
   loadHistoryFromSheet();
 });
+
