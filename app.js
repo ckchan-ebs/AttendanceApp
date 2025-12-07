@@ -1,3 +1,4 @@
+<script>
 const officeLat = 3.1925444;  // Example location (Kuala Lumpur)
 const officeLng = 101.6110718;
 const maxDistanceMeters = 500; // Allow 500m around office
@@ -6,128 +7,110 @@ const maxDistanceMeters = 500; // Allow 500m around office
 function updateDateTime() {
   const now = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const timeString = now.toLocaleTimeString();  // Get time
-  const dateString = now.toLocaleDateString(undefined, options);  // Get date with weekday
+  const timeString = now.toLocaleTimeString();
+  const dateString = now.toLocaleDateString(undefined, options);
   document.getElementById("datetime").innerHTML = `${dateString} | ${timeString}`;
 }
+setInterval(updateDateTime, 1000);
+updateDateTime();
 
 // Show saved staff name if available
 const staffNameDisplay = document.getElementById("staffNameDisplay");
 const storedName = localStorage.getItem("staffName");
 if (storedName) {
-  staffNameDisplay.innerHTML = `👤 ${storedName}`;  // Display name if available
+  staffNameDisplay.textContent = `👤 ${storedName}`;
 } else {
-  staffNameDisplay.innerHTML = '👤 No name saved yet';  // Display placeholder if no name
+  staffNameDisplay.textContent = '👤 No name saved yet';
 }
 
-// Update time every second
-setInterval(updateDateTime, 1000);
-
+// Haversine distance function
 function distanceBetween(lat1, lon1, lat2, lon2) {
   const toRad = x => x * Math.PI / 180;
   const R = 6371e3;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
+// Check in/out location
 function checkLocation() {
-  navigator.geolocation.getCurrentPosition(function(position) {
-    const latitude = position.coords.latitude;
-    const longitude = position.coords.longitude;
-    console.log(`Detected Location: Latitude: ${latitude}, Longitude: ${longitude}`);
-
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude, longitude } = pos.coords;
     const distance = distanceBetween(latitude, longitude, officeLat, officeLng);
-    console.log(`Distance from office: ${distance.toFixed(2)} meters`);
-
-    let locationInfo = `Latitude: ${latitude}, Longitude: ${longitude}`; // Store location info
+    let locationInfo = `Latitude: ${latitude}, Longitude: ${longitude}`;
     if (distance <= maxDistanceMeters) {
       proceedCheck("Used GPS", locationInfo);
     } else {
-      // Out of office area, ask user if want to proceed
-      if (confirm("❌ You are not in office area!\n\nDo you still want to proceed with check-in/check-out?")) {
+      if (confirm("❌ You are not in office area!\nProceed anyway?")) {
         proceedCheck("No GPS", "No Location");
-      } else {
-        alert("✅ Action cancelled.");
       }
     }
-  }, function(error) {
-    console.error("Error getting location", error);
-    let locationInfo = "No Location";
-    if (confirm("❌ Cannot get your location!\n\nDo you still want to proceed with check-in/check-out without GPS?")) {
-      proceedCheck("No GPS", locationInfo);
-    } else {
-      alert("✅ Action cancelled.");
+  }, () => {
+    if (confirm("❌ Cannot get location. Proceed anyway?")) {
+      proceedCheck("No GPS", "No Location");
     }
   });
 }
 
+// Handle staff name and proceed check
 function proceedCheck(remark, location) {
-  const staffName = localStorage.getItem("staffName");
-  if (!staffName) {
-    const name = prompt("Enter your name:");
+  let name = localStorage.getItem("staffName");
+  if (!name) {
+    name = prompt("Enter your name:")?.trim();
+    if (!name) return;
     localStorage.setItem("staffName", name);
-    checkToday(name, remark, location);
-  } else {
-    checkToday(staffName, remark, location);
   }
+  staffNameDisplay.textContent = `👤 ${name}`;
+  checkToday(name, remark, location);
 }
 
+// Check in/out for today
 function checkToday(name, remark, location) {
-  const today = new Date().toISOString().slice(0, 10); // Get current date in 'yyyy-mm-dd' format
-  const lastAction = localStorage.getItem("lastActionDate"); // Get last action date from localStorage
+  const today = new Date().toISOString().slice(0, 10);
+  const lastAction = localStorage.getItem("lastActionDate");
 
   let action;
   if (lastAction === today) {
-    // If the last action was on the same date, it's time to check out
     action = "Check-Out";
-    localStorage.removeItem("lastActionDate"); // Clear last action date after check-out
+    localStorage.removeItem("lastActionDate");
   } else {
-    // If no check-out for today, it's check-in
     action = "Check-In";
-    localStorage.setItem("lastActionDate", today); // Save the current date as the last action date for future check-out
+    localStorage.setItem("lastActionDate", today);
   }
 
-  sendAttendance(name, action, remark, location); // Send attendance data to the form
+  sendAttendance(name, action, remark, location);
 }
 
+// Send attendance to Google Form
 function sendAttendance(name, action, remark, location) {
   const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
-  
   const formData = new FormData();
-  formData.append("entry.2140323296", name);  // Name field
-  formData.append("entry.668867521", action);  // Action field
-  formData.append("entry.1234567890", remark); // Remark field
-  formData.append("entry.9876543210", location);  // Location field
-  
-  // Send the data
-  fetch(formUrl, {
-    method: "POST",
-    mode: "no-cors",
-    body: formData
-  }).then(() => {
-    alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`);
-  }).catch(() => {
-    alert("❌ Failed to send attendance!");
-  });
+  formData.append("entry.2140323296", name);
+  formData.append("entry.668867521", action);
+  formData.append("entry.1234567890", remark);
+  formData.append("entry.9876543210", location);
+  formData.append("entry.1234567891", new Date().toLocaleString());
+
+  fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
+    .then(() => alert(`✅ ${action} successful for ${name} at ${new Date().toLocaleTimeString()}`))
+    .catch(() => alert("❌ Failed to send attendance!"));
 }
 
+// Load attendance history from sheet
 function loadHistoryFromSheet() {
-  const name = localStorage.getItem("staffName");
+  const name = localStorage.getItem("staffName")?.trim();
   if (!name) {
     alert("❗ Please check in at least once to save your name.");
     return;
   }
+  const normName = name.toLowerCase();
 
-  const normName = name.trim().toLowerCase();
   const month = parseInt(document.getElementById("monthSelect").value, 10);
   const year = parseInt(document.getElementById("yearSelect").value, 10);
 
-  fetch('YOUR_WEB_APP_URL') // replace with your deployed Web App URL
+  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec') // replace with your deployed Google Apps Script URL
     .then(res => res.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
@@ -139,7 +122,7 @@ function loadHistoryFromSheet() {
         if (!recName || recName !== normName || !recDate) return false;
 
         const [day, recMonth, recYear] = recDate.split("/").map(Number);
-        return recYear === year && recMonth === month;
+        return recMonth === month && recYear === year;
       });
 
       if (filtered.length === 0) {
@@ -168,10 +151,33 @@ function loadHistoryFromSheet() {
     });
 }
 
+// Populate month/year dropdowns
+function loadMonthYearDropdowns() {
+  const monthSelect = document.getElementById("monthSelect");
+  const yearSelect = document.getElementById("yearSelect");
+  const now = new Date();
+
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.text = new Date(0, m - 1).toLocaleString('default', { month: 'long' });
+    if (m === now.getMonth() + 1) opt.selected = true;
+    monthSelect.appendChild(opt);
+  }
+
+  const currentYear = now.getFullYear();
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.text = y;
+    if (y === currentYear) opt.selected = true;
+    yearSelect.appendChild(opt);
+  }
+}
+
+// Initialize page
 window.addEventListener("DOMContentLoaded", () => {
+  loadMonthYearDropdowns();
   loadHistoryFromSheet();
 });
-
-
-
-
+</script>
