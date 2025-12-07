@@ -110,19 +110,34 @@ function loadHistoryFromSheet() {
   const month = parseInt(document.getElementById("monthSelect").value, 10);
   const year = parseInt(document.getElementById("yearSelect").value, 10);
 
-  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec') // replace with your deployed Google Apps Script URL
+  fetch('YOUR_WEB_APP_URL') // Replace with your deployed Google Apps Script URL
     .then(res => res.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
       tbody.innerHTML = "";
 
+      function parseDate(dateString) {
+        if (!dateString) return null;
+        if (dateString.includes("-")) {
+          // YYYY-MM-DD
+          const [y, m, d] = dateString.split("-").map(Number);
+          return { day: d, month: m, year: y };
+        } else if (dateString.includes("/")) {
+          // DD/MM/YYYY
+          const [d, m, y] = dateString.split("/").map(Number);
+          return { day: d, month: m, year: y };
+        }
+        return null;
+      }
+
       const filtered = data.filter(record => {
         const recName = (record["Name"] || "").trim().toLowerCase();
-        const recDate = record["Date"]; // format: DD/MM/YYYY
-        if (!recName || recName !== normName || !recDate) return false;
+        if (recName !== normName) return false;
 
-        const [day, recMonth, recYear] = recDate.split("/").map(Number);
-        return recMonth === month && recYear === year;
+        const parsed = parseDate(record["Date"]);
+        if (!parsed) return false;
+
+        return parsed.month === month && parsed.year === year;
       });
 
       if (filtered.length === 0) {
@@ -150,6 +165,7 @@ function loadHistoryFromSheet() {
       alert("❌ Failed to load attendance history.");
     });
 }
+
 
 // Populate month/year dropdowns
 function loadMonthYearDropdowns() {
@@ -181,3 +197,4 @@ window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
 });
 </script>
+
