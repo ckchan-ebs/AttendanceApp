@@ -117,52 +117,81 @@ function sendAttendance(name, action, remark, location) {
 }
 
 function loadHistoryFromSheet() {
-  const storedName = localStorage.getItem("staffName");
-  if (!storedName) {
+  const name = localStorage.getItem("staffName");
+  if (!name) {
     alert("❗ Please check in at least once to save your name.");
     return;
   }
 
-  const normalizedStoredName = storedName.trim().toLowerCase();
+  const normName = name.trim().toLowerCase();
+  const month = parseInt(document.getElementById("monthSelect").value); // 1–12
+  const year = parseInt(document.getElementById("yearSelect").value);
 
-  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec')
-    .then(response => response.json())
+  fetch('https://script.google.com/macros/s/AKfycbxjbvJu1VdyaDuy5qPLtyX810IyX5iFO--b5sI6sfsBXVLp3G3Sq0sH7KgQ8Pm3GpgX/exec')
+    .then(res => res.json())
     .then(data => {
+      console.log("Raw attendance data:", data); // Debug
+
       const tbody = document.getElementById("historyBody");
       tbody.innerHTML = "";
 
-      const filteredData = data.filter(record => {
-        const recordName = (record["Name"] || "").trim().toLowerCase();
-        return recordName && recordName === normalizedStoredName;
+      // Filter by name AND month/year
+      const filtered = data.filter(record => {
+        const recName = (record["Name"] || "").trim().toLowerCase();
+        const recDate = record["Date"];
+        if (!recName || recName !== normName || !recDate) return false;
+
+        let recDay, recMonth, recYear;
+
+        if (recDate.includes("/")) {
+          // Possibly DD/MM/YYYY or MM/DD/YYYY
+          const parts = recDate.split("/").map(Number);
+          if (parts[2] < 100) parts[2] += 2000; // handle YY format
+          // Try to guess format: if month > 12, swap
+          if (parts[1] > 12) {
+            [recDay, recMonth, recYear] = [parts[1], parts[0], parts[2]];
+          } else {
+            [recDay, recMonth, recYear] = [parts[0], parts[1], parts[2]];
+          }
+        } else if (recDate.includes("-")) {
+          // YYYY-MM-DD
+          const parts = recDate.split("-").map(Number);
+          [recYear, recMonth, recDay] = parts;
+        } else {
+          return false; // unknown format
+        }
+
+        return recMonth === month && recYear === year;
       });
 
-      if (filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8">No records found for ${storedName}</td></tr>`;
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
         return;
       }
 
-      filteredData.reverse().forEach(record => {
+      // Reverse to show latest first
+      filtered.reverse().forEach(r => {
         const tr = document.createElement("tr");
-
         tr.innerHTML = `
-          <td>${record["Date"] || ""}</td>
-          <td>${record["Name"] || ""}</td>
-          <td>${record["Check-In Time"] || ""}</td>
-          <td>${record["Check-Out Time"] || ""}</td>
-          <td>${record["Total Work Hours"] || ""}</td>
-          <td>${record["Work in Minutes"] || ""}</td>
-          <td>${record["Remark"] || ""}</td>
-          <td>${record["Location"] || ""}</td>
+          <td>${r["Date"] || ""}</td>
+          <td>${r["Name"] || ""}</td>
+          <td>${r["Check-In Time"] || ""}</td>
+          <td>${r["Check-Out Time"] || ""}</td>
+          <td>${r["Total Work Hours"] || ""}</td>
+          <td>${r["Work in Minutes"] || ""}</td>
+          <td>${r["Remark"] || ""}</td>
+          <td>${r["Location"] || ""}</td>
         `;
-
         tbody.appendChild(tr);
       });
     })
-    .catch(error => {
-      console.error("Failed to load history:", error);
+    .catch(err => {
+      console.error("Failed to load attendance history:", err);
+      alert("❌ Failed to load attendance history.");
     });
 }
 
 window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
 });
+
