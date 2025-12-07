@@ -74,7 +74,7 @@ function checkToday(name, remark, location) {
 
 // Send attendance to Google Form
 function sendAttendance(name, action, remark, location) {
-  const formUrl = "YOUR_GOOGLE_FORM_URL"; // Replace with your Form URL
+  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse"; // Replace with your Form URL
   const formData = new FormData();
   formData.append("entry.2140323296", name);
   formData.append("entry.668867521", action);
@@ -167,3 +167,4 @@ window.addEventListener("DOMContentLoaded", () => {
   loadMonthYearDropdowns();
   loadHistoryFromSheet();
 });
+
