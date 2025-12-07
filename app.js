@@ -127,7 +127,7 @@ function loadHistoryFromSheet() {
   const month = parseInt(document.getElementById("monthSelect").value, 10);
   const year = parseInt(document.getElementById("yearSelect").value, 10);
 
-  fetch('YOUR_WEB_APP_URL') // Replace with your deployed Apps Script Web App URL
+  fetch('YOUR_WEB_APP_URL') // replace with your deployed Web App URL
     .then(res => res.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
@@ -135,14 +135,10 @@ function loadHistoryFromSheet() {
 
       const filtered = data.filter(record => {
         const recName = (record["Name"] || "").trim().toLowerCase();
-        const recDate = record["Date"];
+        const recDate = record["Date"]; // format: DD/MM/YYYY
         if (!recName || recName !== normName || !recDate) return false;
 
-        const parts = recDate.split("-").map(Number);
-        const recYear = parts[0];
-        const recDay = parts[1];   // Not used
-        const recMonth = parts[2]; // Month is the 3rd part
-
+        const [day, recMonth, recYear] = recDate.split("/").map(Number);
         return recYear === year && recMonth === month;
       });
 
@@ -175,6 +171,7 @@ function loadHistoryFromSheet() {
 window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
 });
+
 
 
 
