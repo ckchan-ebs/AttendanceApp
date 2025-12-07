@@ -2,7 +2,7 @@ const officeLat = 3.1925444;  // Kuala Lumpur office
 const officeLng = 101.6110718;
 const maxDistanceMeters = 500;
 
-// Update date/time
+// --- Update date/time ---
 function updateDateTime() {
   const now = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -11,12 +11,12 @@ function updateDateTime() {
 setInterval(updateDateTime, 1000);
 updateDateTime();
 
-// Display stored staff name
+// --- Display staff name ---
 const staffNameDisplay = document.getElementById("staffNameDisplay");
 const storedName = localStorage.getItem("staffName");
 staffNameDisplay.textContent = storedName ? `👤 ${storedName}` : '👤 No name saved yet';
 
-// Distance calculator
+// --- Distance calculator ---
 function distanceBetween(lat1, lon1, lat2, lon2) {
   const toRad = x => x * Math.PI / 180;
   const R = 6371e3;
@@ -26,7 +26,7 @@ function distanceBetween(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Check location before check-in/out
+// --- Check location ---
 function checkLocation() {
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude, longitude } = pos.coords;
@@ -46,7 +46,7 @@ function checkLocation() {
   });
 }
 
-// Proceed check-in/out
+// --- Proceed check-in/out ---
 function proceedCheck(remark, location) {
   let name = localStorage.getItem("staffName");
   if (!name) {
@@ -58,6 +58,7 @@ function proceedCheck(remark, location) {
   checkToday(name, remark, location);
 }
 
+// --- Check today ---
 function checkToday(name, remark, location) {
   const today = new Date().toISOString().slice(0,10);
   const lastAction = localStorage.getItem("lastActionDate");
@@ -72,9 +73,9 @@ function checkToday(name, remark, location) {
   sendAttendance(name, action, remark, location);
 }
 
-// Send attendance to Google Form
+// --- Send attendance ---
 function sendAttendance(name, action, remark, location) {
-  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse"; // Replace with your Form URL
+  const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse"; // Replace with your Google Form URL
   const formData = new FormData();
   formData.append("entry.2140323296", name);
   formData.append("entry.668867521", action);
@@ -86,7 +87,28 @@ function sendAttendance(name, action, remark, location) {
     .catch(() => alert("❌ Failed to send attendance!"));
 }
 
-// Load attendance history
+// --- Format datetime to local string ---
+function formatDateTime(dtString) {
+  if (!dtString) return "";
+  let dt;
+  if (dtString.includes("/")) {
+    // DD/MM/YYYY or DD/MM/YYYY HH:MM:SS
+    const parts = dtString.split(" ");
+    const [d, m, y] = parts[0].split("/").map(Number);
+    if (parts[1]) {
+      const [h, min, s] = parts[1].split(":").map(Number);
+      dt = new Date(y, m-1, d, h, min, s);
+    } else {
+      dt = new Date(y, m-1, d);
+    }
+  } else {
+    // ISO string
+    dt = new Date(dtString);
+  }
+  return dt.toLocaleString(); // local timezone
+}
+
+// --- Load history ---
 function loadHistoryFromSheet() {
   const name = localStorage.getItem("staffName")?.trim();
   if (!name) { alert("❗ Please check in at least once to save your name."); return; }
@@ -95,7 +117,7 @@ function loadHistoryFromSheet() {
   const month = parseInt(document.getElementById("monthSelect").value, 10);
   const year = parseInt(document.getElementById("yearSelect").value, 10);
 
-  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec') // Replace with your deployed Google Apps Script Web App URL
+  fetch('https://script.google.com/macros/s/AKfycbzw79gDoE49-IxPCcVF8X_RgTRtAiWgqNl0GrFtYU_CtuwnimviTcVBuB0K69QFsRIQ/exec') // Replace with your deployed Apps Script Web App URL
     .then(res => res.json())
     .then(data => {
       const tbody = document.getElementById("historyBody");
@@ -106,14 +128,23 @@ function loadHistoryFromSheet() {
         if (recName !== normName) return false;
 
         let dateString = record["Date"] || record["Check-In Time"] || "";
-        dateString = dateString.split(" ")[0];
+        if (!dateString) return false;
 
-        let day, recMonth, recYear;
-        if (dateString.includes("/")) [day, recMonth, recYear] = dateString.split("/").map(Number);
-        else if (dateString.includes("-")) [recYear, recMonth, day] = dateString.split("-").map(Number);
-        else return false;
+        let dateObj;
+        if (dateString.includes("/")) {
+          const parts = dateString.split(" ");
+          const [d, m, y] = parts[0].split("/").map(Number);
+          if (parts[1]) {
+            const [h, min, s] = parts[1].split(":").map(Number);
+            dateObj = new Date(y, m-1, d, h, min, s);
+          } else {
+            dateObj = new Date(y, m-1, d);
+          }
+        } else {
+          dateObj = new Date(dateString);
+        }
 
-        return recMonth === month && recYear === year;
+        return (dateObj.getMonth()+1) === month && dateObj.getFullYear() === year;
       });
 
       if (!filtered.length) {
@@ -124,10 +155,10 @@ function loadHistoryFromSheet() {
       filtered.reverse().forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${r["Date"] || ""}</td>
+          <td>${formatDateTime(r["Date"])}</td>
           <td>${r["Name"] || ""}</td>
-          <td>${r["Check-In Time"] || ""}</td>
-          <td>${r["Check-Out Time"] || ""}</td>
+          <td>${formatDateTime(r["Check-In Time"])}</td>
+          <td>${formatDateTime(r["Check-Out Time"])}</td>
           <td>${r["Total Work Hours"] || ""}</td>
           <td>${r["Work in Minutes"] || ""}</td>
           <td>${r["Remark"] || ""}</td>
@@ -139,7 +170,7 @@ function loadHistoryFromSheet() {
     .catch(err => { console.error(err); alert("❌ Failed to load attendance history."); });
 }
 
-// Populate month/year dropdowns
+// --- Populate month/year dropdowns ---
 function loadMonthYearDropdowns() {
   const monthSelect = document.getElementById("monthSelect");
   const yearSelect = document.getElementById("yearSelect");
@@ -167,4 +198,3 @@ window.addEventListener("DOMContentLoaded", () => {
   loadMonthYearDropdowns();
   loadHistoryFromSheet();
 });
-
