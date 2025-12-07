@@ -124,8 +124,8 @@ function loadHistoryFromSheet() {
   }
 
   const normName = name.trim().toLowerCase();
-  const month = parseInt(document.getElementById("monthSelect").value); // 1–12
-  const year = parseInt(document.getElementById("yearSelect").value);
+  const month = parseInt(document.getElementById("monthSelect").value, 10);
+  const year = parseInt(document.getElementById("yearSelect").value, 10);
 
   fetch('YOUR_WEB_APP_URL') // Replace with your deployed Apps Script Web App URL
     .then(res => res.json())
@@ -138,11 +138,10 @@ function loadHistoryFromSheet() {
         const recDate = record["Date"];
         if (!recName || recName !== normName || !recDate) return false;
 
-        // Parse YYYY-MM-DD format
         const parts = recDate.split("-").map(Number);
         const recYear = parts[0];
-        const recMonth = parts[1];
-        // const recDay = parts[2]; // not needed for filtering
+        const recDay = parts[1];   // Not used
+        const recMonth = parts[2]; // Month is the 3rd part
 
         return recYear === year && recMonth === month;
       });
@@ -173,9 +172,9 @@ function loadHistoryFromSheet() {
     });
 }
 
-
 window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
 });
+
 
 
