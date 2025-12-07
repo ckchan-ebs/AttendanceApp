@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,61 +11,19 @@
       padding: 20px;
       background-color: #f4f4f9;
     }
-    h2 {
-      color: #333;
-      font-size: 24px;
-    }
-    .container {
-      margin-top: 30px;
-    }
-    #datetime {
-      font-size: 18px;
-      margin-bottom: 20px;
-      color: #555;
-    }
-    #staffNameDisplay {
-      font-size: 20px;
-      margin-bottom: 30px;
-      color: #333;
-    }
-    button {
-      padding: 12px 24px;
-      font-size: 18px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    table {
-      width: 100%;
-      max-width: 800px;
-      margin: auto;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 8px;
-      border: 1px solid #ccc;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    select {
-      padding: 6px;
-      margin: 10px;
-      font-size: 16px;
-    }
+    h2 { color: #333; font-size: 24px; }
+    .container { margin-top: 30px; }
+    #datetime { font-size: 18px; margin-bottom: 20px; color: #555; }
+    #staffNameDisplay { font-size: 20px; margin-bottom: 30px; color: #333; }
+    button { padding: 12px 24px; font-size: 18px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background-color: #45a049; }
+    table { width: 100%; max-width: 800px; margin: auto; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ccc; }
+    th { background-color: #f2f2f2; }
+    select { padding: 6px; margin: 10px; font-size: 16px; }
     @media (max-width: 600px) {
-      button, select {
-        width: 100%;
-        font-size: 16px;
-      }
-      #staffNameDisplay {
-        font-size: 18px;
-      }
+      button, select { width: 100%; font-size: 16px; }
+      #staffNameDisplay { font-size: 18px; }
     }
   </style>
 </head>
@@ -105,169 +62,6 @@
     </table>
   </div>
 
-  <script>
-    const officeLat = 3.1925444;
-    const officeLng = 101.6110718;
-    const maxDistanceMeters = 500;
-
-    function updateDateTime() {
-      const now = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById("datetime").innerHTML = `${now.toLocaleDateString(undefined, options)} | ${now.toLocaleTimeString()}`;
-    }
-    setInterval(updateDateTime, 1000);
-    updateDateTime();
-
-    const staffNameDisplay = document.getElementById("staffNameDisplay");
-    const storedName = localStorage.getItem("staffName");
-    staffNameDisplay.textContent = storedName ? `👤 ${storedName}` : '👤 No name saved yet';
-
-    function distanceBetween(lat1, lon1, lat2, lon2) {
-      const R = 6371e3;
-      const toRad = deg => deg * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    function checkLocation() {
-      navigator.geolocation.getCurrentPosition(pos => {
-        const { latitude, longitude } = pos.coords;
-        const distance = distanceBetween(latitude, longitude, officeLat, officeLng);
-        if (distance <= maxDistanceMeters) {
-          proceedCheck("Used GPS", `${latitude}, ${longitude}`);
-        } else {
-          if (confirm("❌ You are not in office area!\n\nProceed anyway?")) {
-            proceedCheck("No GPS", "No Location");
-          }
-        }
-      }, () => {
-        if (confirm("❌ Cannot get location. Proceed anyway?")) {
-          proceedCheck("No GPS", "No Location");
-        }
-      });
-    }
-
-    function proceedCheck(remark, location) {
-      let name = localStorage.getItem("staffName") || prompt("Enter your name:");
-      if (!name) return;
-      localStorage.setItem("staffName", name);
-      staffNameDisplay.textContent = `👤 ${name}`;
-
-      const today = new Date();
-      const currentTime = today.toLocaleString();
-      const lastAction = localStorage.getItem("lastActionDate");
-      const action = (lastAction === today.toISOString().slice(0, 10)) ? "Check-Out" : "Check-In";
-
-      if (action === "Check-Out") {
-        localStorage.removeItem("lastActionDate");
-      } else {
-        localStorage.setItem("lastActionDate", today.toISOString().slice(0, 10));
-      }
-
-      sendAttendance(name, action, remark, location, currentTime);
-    }
-
-    function sendAttendance(name, action, remark, location, checkInTime) {
-      const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSdGDioMohaZRkJrgxoseooVhyXTopysgEBE3QJB6cJMRzi2Wg/formResponse";
-      const formData = new FormData();
-      formData.append("entry.2140323296", name);
-      formData.append("entry.668867521", action);
-      formData.append("entry.1234567890", remark);
-      formData.append("entry.9876543210", location);
-      formData.append("entry.1234567891", checkInTime);
-
-      fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
-        .then(() => alert(`✅ ${action} successful for ${name} at ${checkInTime}`))
-        .catch(() => alert("❌ Failed to send attendance!"));
-    }
-
-    function formatTime(timeString) {
-      if (!timeString) return "";
-      const timeParts = timeString.split(":");
-      if (timeParts.length >= 2) {
-        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
-      }
-      return timeString;
-    }
-
-    function loadHistoryFromSheet() {
-      const name = localStorage.getItem("staffName");
-      if (!name) {
-        alert("❗ Please check in at least once to save your name.");
-        return;
-      }
-      const normName = name.trim().toLowerCase();
-      const month = parseInt(document.getElementById("monthSelect").value);
-      const year = parseInt(document.getElementById("yearSelect").value);
-
-      fetch('https://script.google.com/macros/s/AKfycbxjbvJu1VdyaDuy5qPLtyX810IyX5iFO--b5sI6sfsBXVLp3G3Sq0sH7KgQ8Pm3GpgX/exec')
-        .then(res => res.json())
-        .then(data => {
-          const tbody = document.getElementById("historyBody");
-          tbody.innerHTML = "";
-
-          const filtered = data.filter(r => {
-            const recName = (r["Name"] || "").trim().toLowerCase();
-            const recDate = r["Date"];
-            if (!recDate || !recDate.includes("/")) return false;
-            const [recDay, recMonth, recYear] = recDate.split("/").map(Number);
-            return recName === normName && recMonth === month && recYear === year;
-          });
-
-          if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8">No records for ${name} in ${month}/${year}</td></tr>`;
-            return;
-          }
-
-          filtered.reverse().forEach(r => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${r["Date"] || ""}</td>
-              <td>${r["Name"] || ""}</td>
-              <td>${formatTime(r["Check-In Time"] || "")}</td>
-              <td>${formatTime(r["Check-Out Time"] || "")}</td>
-              <td>${r["Total Work Hours"] || ""}</td>
-              <td>${r["Work in Minutes"] || ""}</td>
-              <td>${r["Remark"] || ""}</td>
-              <td>${r["Location"] || ""}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        })
-        .catch(err => {
-          console.error("History load error:", err);
-          alert("❌ Failed to load attendance history.");
-        });
-    }
-
-    function loadMonthYearDropdowns() {
-      const monthSelect = document.getElementById("monthSelect");
-      const yearSelect = document.getElementById("yearSelect");
-      const now = new Date();
-
-      for (let m = 0; m < 12; m++) {
-        const opt = document.createElement("option");
-        opt.value = m + 1;
-        opt.text = new Date(0, m).toLocaleString('default', { month: 'long' });
-        if (m === now.getMonth()) opt.selected = true;
-        monthSelect.appendChild(opt);
-      }
-
-      const currentYear = now.getFullYear();
-      for (let y = currentYear; y >= currentYear - 5; y--) {
-        const opt = document.createElement("option");
-        opt.value = y;
-        opt.text = y;
-        if (y === currentYear) opt.selected = true;
-        yearSelect.appendChild(opt);
-      }
-    }
-
-    // Initial setup
-    loadMonthYearDropdowns();
-    loadHistoryFromSheet();
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
