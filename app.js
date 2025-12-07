@@ -127,41 +127,24 @@ function loadHistoryFromSheet() {
   const month = parseInt(document.getElementById("monthSelect").value); // 1–12
   const year = parseInt(document.getElementById("yearSelect").value);
 
-  fetch('https://script.google.com/macros/s/AKfycbxjbvJu1VdyaDuy5qPLtyX810IyX5iFO--b5sI6sfsBXVLp3G3Sq0sH7KgQ8Pm3GpgX/exec')
+  fetch('YOUR_WEB_APP_URL') // Replace with your deployed Apps Script Web App URL
     .then(res => res.json())
     .then(data => {
-      console.log("Raw attendance data:", data); // Debug
-
       const tbody = document.getElementById("historyBody");
       tbody.innerHTML = "";
 
-      // Filter by name AND month/year
       const filtered = data.filter(record => {
         const recName = (record["Name"] || "").trim().toLowerCase();
         const recDate = record["Date"];
         if (!recName || recName !== normName || !recDate) return false;
 
-        let recDay, recMonth, recYear;
+        // Parse YYYY-MM-DD format
+        const parts = recDate.split("-").map(Number);
+        const recYear = parts[0];
+        const recMonth = parts[1];
+        // const recDay = parts[2]; // not needed for filtering
 
-        if (recDate.includes("/")) {
-          // Possibly DD/MM/YYYY or MM/DD/YYYY
-          const parts = recDate.split("/").map(Number);
-          if (parts[2] < 100) parts[2] += 2000; // handle YY format
-          // Try to guess format: if month > 12, swap
-          if (parts[1] > 12) {
-            [recDay, recMonth, recYear] = [parts[1], parts[0], parts[2]];
-          } else {
-            [recDay, recMonth, recYear] = [parts[0], parts[1], parts[2]];
-          }
-        } else if (recDate.includes("-")) {
-          // YYYY-MM-DD
-          const parts = recDate.split("-").map(Number);
-          [recYear, recMonth, recDay] = parts;
-        } else {
-          return false; // unknown format
-        }
-
-        return recMonth === month && recYear === year;
+        return recYear === year && recMonth === month;
       });
 
       if (filtered.length === 0) {
@@ -169,7 +152,6 @@ function loadHistoryFromSheet() {
         return;
       }
 
-      // Reverse to show latest first
       filtered.reverse().forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -191,7 +173,9 @@ function loadHistoryFromSheet() {
     });
 }
 
+
 window.addEventListener("DOMContentLoaded", () => {
   loadHistoryFromSheet();
 });
+
 
